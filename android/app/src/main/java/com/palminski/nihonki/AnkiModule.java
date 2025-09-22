@@ -15,10 +15,12 @@ import com.ichi2.anki.api.AddContentApi;
 
 public class AnkiModule extends ReactContextBaseJavaModule {
     private final ReactApplicationContext reactContext;
+    private final AnkiDroidHelper helper;
 
     public AnkiModule(ReactApplicationContext context) {
         super(context);
         this.reactContext = context;
+        this.helper = new AnkiDroidHelper(context);
     }
 
     @Override
@@ -26,51 +28,12 @@ public class AnkiModule extends ReactContextBaseJavaModule {
         return "AnkiModule";
     }
 
-    @ReactMethod
-    public void getDecks(Promise promise) {
-        try {
-            Uri uri = Uri.parse("content://com.ichi2.anki.api/deckList");
-            Cursor cursor = reactContext.getContentResolver().query(uri, null, null, null, null);
-            Log.d("AnkiModule", "HERE");
+    // ==============================================================================================================
 
-            JSONArray decks = new JSONArray();
-            if (cursor != null) {
-                Log.d("AnkiModule", "Deck count: " + cursor.getCount());
+    // Methods To Be Called From Native App
 
-                int index = cursor.getColumnIndexOrThrow("name");
+    // ==============================================================================================================
 
-                while (cursor.moveToNext()) {
-                    String deckName = cursor.getString(index);
-                    decks.put(deckName);
-                }
-                cursor.close();
-            }
-            promise.resolve(decks.toString());
-        } catch (Exception e) {
-            Log.e("AnkiModule", "Error Getting Decks", e);
-            promise.reject("ANKI_ERROR", e);
-        }
-    }
-//-----------------------------------------------------------------
-// @ReactMethod
-// public void requestPermission(Promise promise) {
-//     try {
-//         AddContentApi api = new AddContentApi(reactContext);
-//         boolean hasPermission = api.checkDatabasePermission();
-
-//         if(!hasPermission) {
-//             api.requestPermission((Activity) getCurrentActivity());
-//             promise.resolve("Permission requested _ approve in AnkiDroid.");
-//         }
-//         else{
-//             promise.resolve("Permission already granted");
-
-//         }
-//     } catch (Exception e) {
-//                     promise.reject("ANKI_ERROR", e);
-
-//     }
-// }
     @ReactMethod
     public void addTestNote(Promise promise) {
         try {
@@ -79,16 +42,54 @@ public class AnkiModule extends ReactContextBaseJavaModule {
                 promise.reject("ANKI_UNAVAILABLE", "ANKIDROID API is not available");
                 return;
             }
-            AddContentApi api = new AddContentApi(reactContext);
 
-            long deckId = api.addNewDeck("Deck From App");
-            long modelId = api.addNewBasicModel("com.something.myapp");
-            api.addNote(modelId, deckId, new String[] {"日の出", "sunrise"}, null);
+            // Ensure Deck Exists
+            Long deckId = helper.findDeckIdByName("DEV DECK");
+            if (deckId == null) {
+                deckId = helper.getApi().addNewDeck("DEV DECK");
+            }
 
-                    promise.resolve("Note Added");
+            Long modelId = helper.findModelIdByName("Core 2000", 18);
+            if (modelId == null) {
+                promise.resolve("Duplicate Core 2000 Note Type Not Found");
+                return;
+            }
+
+            long noteId = helper.getApi().addNote(
+                    modelId,
+                    deckId,
+                    new String[] {
+                            Long.toString(modelId), // 1. Index
+                            "暗記", // 2. Vocab Kanji
+                            "暗記[あんき]", // 3. Vocab Kanji With Furigana
+                            "あんき", // 4. Vocab Kana
+                            "Memorization", // 5. Vocabulary English
+                            "", // 6. Vocabulary Audio
+                            "Noun, Suru Verb", // 7. Vocabulary Pos (Type of Speech)
+                            "", // 8. Caution
+                            "毎日<b>暗記</b>します。", // 9. Example Sentance Kanji
+                            "毎日[まいにち]<b>暗記[あんき]</b>します。", // 10. Example Sentance Kanji with Furigana
+                            "まいにち<b>あんき</b>します。", // 11. Example Sentence Only Kana
+                            "I memorize Every Day", // 12. English Sentences
+                            "", // 13. Sentence Clozed (?)
+                            "", // 14. Sentence Audio
+                            "", // 15. Notes
+                            "", // 16. Core Index
+                            "", // 17. Optimised Sentence Index
+                            "", // 18. Fequency
+                    },
+                    null);
+            // "日の出", "sunrise"
+            if (noteId == -1) {
+                promise.resolve("Duplicate note skipped");
+            } else {
+                promise.resolve("Note added with Id: " + noteId);
+            }
+
+            promise.resolve("Note Added");
         } catch (Exception e) {
+            Log.e("AnkiModule", "ERROR ADDING TEST NOTE", e);
             promise.reject("ANKI_ERROR", e);
         }
     }
-
 }
