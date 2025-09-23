@@ -31,18 +31,18 @@ export default function App() {
                         tabBarIcon: ({ color, size }) => {
                             let iconName: keyof typeof Ionicons.glyphMap = "home";
 
-                            if (route.name === "Home") iconName = "home";
-                            if (route.name === "Testing") iconName = "flask";
-                            if (route.name === "Settings") iconName = "settings";
+                            if (route.name === "ホーム") iconName = "home";
+                            if (route.name === "テスト") iconName = "flask";
+                            if (route.name === "設定") iconName = "settings";
 
                             return <Ionicons name={iconName} size={size} color={color} />
                         },
 
                     })}
                 >
-                    <Tab.Screen name="Home" component={HomeScreen} />
-                    <Tab.Screen name='Testing' component={TestScreen} />
-                    <Tab.Screen name='Settings' component={SettingsScreen} />
+                    <Tab.Screen name="ホーム" component={HomeScreen} />
+                    <Tab.Screen name='テスト' component={TestScreen} />
+                    <Tab.Screen name='設定' component={SettingsScreen} />
                 </Tab.Navigator>
             </NavigationContainer>
         </>

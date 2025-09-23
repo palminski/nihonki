@@ -4,6 +4,7 @@ import OpenAI from "openai";
 
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState } from "react";
+import { loadDeckSetting } from "~/utils/settingsManager";
 // import { EXPO_PUBLIC_OPENAI_KEY } from "@env";
 
 const { AnkiModule } = NativeModules;
@@ -29,6 +30,7 @@ export default function TestScreen() {
     }
 
     const DebugOpenAi = async () => {
+        if(input == null || input == "") return;
         setAiRespone(`Loading...`);
         try {
             const openai = new OpenAI({
@@ -124,6 +126,8 @@ Here are some example outputs to follow:
                     return;
                 }
 
+                const deckToInsertInto = await loadDeckSetting();
+
                 const result = await AnkiModule.addNote(
                     cardObject.kanji,
                     cardObject.kana,
@@ -134,8 +138,9 @@ Here are some example outputs to follow:
                     cardObject.exampleSentenceFurigana,
                     cardObject.exampleSentenceKana,
                     cardObject.exampleSentenceEnglish,
+                    deckToInsertInto ? deckToInsertInto : "DEV DECK"
                 );
-
+                setInput("");
                 setAiRespone(
                     `${result}!
 ${cardObject.furigana}
@@ -188,18 +193,29 @@ ${cardObject.meaning} `
 
     return (
         <ScreenWrapper>
-            <Text className="text-white">
-                Anki Testing
+            <Text className="text-white text-2xl">
+                Japanese Vocab
             </Text>
-            <Pressable className="bg-purple-500/50 rounded p-2 mb-5" onPress={DebugFunction}>
-                <Text>Add Card</Text>
-            </Pressable>
 
-            <TextInput className='bg-white my-1' value={input} onChangeText={(text) => HandleFormChange(text)} placeholder='言葉' />
-            <Pressable className="bg-purple-500/50 rounded p-2 mb-5" onPress={DebugOpenAi}>
-                <Text>OpenAi Call</Text>
-            </Pressable>
-            <Text className="text-white">{aiResponse ?? "Awaiting API Call"}</Text>
+            <TextInput className='bg-white text-3xl placeholder:text-gray-300 my-1 rounded mb-2' value={input} onChangeText={(text) => HandleFormChange(text)} placeholder='言葉こちら' />
+            {
+                aiResponse === "Loading..." ?
+                    <>
+                        <Pressable className="bg-purple-500/50 rounded p-2 mb-5">
+                            <Text className="text-3xl text-white">Loading...</Text>
+                        </Pressable>
+                    </>
+                    :
+                    <>
+                        <Pressable className="bg-purple-500/50 rounded p-2 mb-5" onPress={DebugOpenAi}>
+                            <Text className="text-3xl text-white">Create Card</Text>
+                        </Pressable>
+                    </>
+            }
+
+            <View className="bg-black rounded min-h-64 py-2 px-3">
+                <Text className="text-purple-300">{aiResponse ?? "Awaiting API Call"}</Text>
+            </View>
 
 
         </ScreenWrapper>

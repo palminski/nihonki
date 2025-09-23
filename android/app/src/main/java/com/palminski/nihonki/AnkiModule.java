@@ -50,6 +50,7 @@ public class AnkiModule extends ReactContextBaseJavaModule {
             String exampleSentenceFurigana,
             String exampleSentenceKana,
             String exampleSentenceEnglish,
+            String deckToInsertInto,
             Promise promise
             ) {
         try {
@@ -60,9 +61,9 @@ public class AnkiModule extends ReactContextBaseJavaModule {
             }
 
             // Ensure Deck Exists
-            Long deckId = helper.findDeckIdByName("DEV DECK");
+            Long deckId = helper.findDeckIdByName(deckToInsertInto);
             if (deckId == null) {
-                deckId = helper.getApi().addNewDeck("DEV DECK");
+                deckId = helper.getApi().addNewDeck(deckToInsertInto);
             }
 
             Long modelId = helper.findModelIdByName("Core 2000", 18);
