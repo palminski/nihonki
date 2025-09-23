@@ -5,7 +5,7 @@ import OpenAI from "openai";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState } from "react";
 import { loadDeckSetting, loadAPIKeySetting } from "~/utils/settingsManager";
-import { OPENAI_KEY } from "@env";
+
 
 
 
@@ -40,7 +40,7 @@ export default function TestScreen() {
         setAiRespone(`Loading...`);
         try {
             const openai = new OpenAI({
-                apiKey: `${OPENAI_KEY}`
+                apiKey: `${key}`
             });
 
             const response = await openai.chat.completions.create({
