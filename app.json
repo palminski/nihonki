@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "nihonki",
+    "name": "Nihonki",
     "slug": "nihonki",
     "version": "1.0.0",
     "web": {
@@ -16,7 +16,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#3b0e59"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -30,6 +30,11 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.palminski.nihonki"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "186ea4c4-fa61-4b70-9741-4740109ed993"
+      }
     }
   }
 }

@@ -4,15 +4,16 @@ import OpenAI from "openai";
 
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState } from "react";
-import { loadDeckSetting } from "~/utils/settingsManager";
-// import { EXPO_PUBLIC_OPENAI_KEY } from "@env";
+import { loadDeckSetting, loadAPIKeySetting } from "~/utils/settingsManager";
+import { OPENAI_KEY } from "@env";
+
+
 
 const { AnkiModule } = NativeModules;
 
 
 export default function TestScreen() {
 
-    const API_KEY = process.env.EXPO_PUBLIC_OPENAI_KEY;
 
     const [input, setInput] = useState("");
     const [aiResponse, setAiRespone] = useState<any>(null);
@@ -30,11 +31,16 @@ export default function TestScreen() {
     }
 
     const DebugOpenAi = async () => {
-        if(input == null || input == "") return;
+        if (input == null || input == "") return;
+        const key = await loadAPIKeySetting();
+        if (key == null || key == "") {
+            setAiRespone(`An API key is required`);
+            return;
+        };
         setAiRespone(`Loading...`);
         try {
             const openai = new OpenAI({
-                apiKey: `${API_KEY}`
+                apiKey: `${OPENAI_KEY}`
             });
 
             const response = await openai.chat.completions.create({
@@ -151,8 +157,9 @@ ${cardObject.meaning} `
             console.log(jsonString);
 
 
-        } catch (error) {
+        } catch (error: any) {
             setAiRespone("ERROR");
+            alert(error?.message);
         }
     }
 
@@ -196,6 +203,8 @@ ${cardObject.meaning} `
             <Text className="text-white text-2xl">
                 Japanese Vocab
             </Text>
+
+
 
             <TextInput className='bg-white text-3xl placeholder:text-gray-300 my-1 rounded mb-2' value={input} onChangeText={(text) => HandleFormChange(text)} placeholder='言葉こちら' />
             {
