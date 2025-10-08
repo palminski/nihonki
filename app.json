@@ -36,7 +36,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.palminski.nihonki.test"
+      "package": "com.palminski.nihonki"
     },
     "extra": {
       "eas": {
