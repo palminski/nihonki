@@ -166,7 +166,7 @@ public class AnkiModule extends ReactContextBaseJavaModule {
             if (noteId == -1) {
                 promise.resolve("Duplicate note skipped");
             } else {
-                promise.resolve("Note added with Id: " + noteId);
+                promise.resolve("Card Added!");
             }
 
             promise.resolve("Note Added");
