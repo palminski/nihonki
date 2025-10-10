@@ -11,6 +11,7 @@ import com.facebook.react.ReactHost
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.load
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
+import com.palminski.nihonki.AnkiPackage
 import com.facebook.soloader.SoLoader
 
 import expo.modules.ApplicationLifecycleDispatcher
@@ -25,8 +26,8 @@ class MainApplication : Application(), ReactApplication {
             val packages = PackageList(this).packages
             // Packages that cannot be autolinked yet can be added manually here, for example:
             // packages.add(MyReactNativePackage())
-            packages.add(AnkiPackage())
-            return packages
+             packages.add(AnkiPackage())
+   return packages
           }
 
           override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"
