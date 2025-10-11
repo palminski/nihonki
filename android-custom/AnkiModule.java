@@ -8,8 +8,11 @@ import android.util.SparseArray;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReadableArray;
+
 import com.facebook.react.bridge.ReactMethod;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -51,8 +54,7 @@ public class AnkiModule extends ReactContextBaseJavaModule {
             String exampleSentenceKana,
             String exampleSentenceEnglish,
             String deckToInsertInto,
-            Promise promise
-            ) {
+            Promise promise) {
         try {
             String pkg = AddContentApi.getAnkiDroidPackageName(reactContext);
             if (pkg == null) {
@@ -74,7 +76,7 @@ public class AnkiModule extends ReactContextBaseJavaModule {
 
             List<String> keys = Arrays.asList(kanji);
             SparseArray<List<NoteInfo>> duplicateNotes = helper.getApi().findDuplicateNotes(modelId, keys);
-            if(duplicateNotes != null && duplicateNotes.size() > 0) {
+            if (duplicateNotes != null && duplicateNotes.size() > 0) {
                 promise.resolve("Duplicate Found. Note Not Added");
                 return;
             }
@@ -116,6 +118,58 @@ public class AnkiModule extends ReactContextBaseJavaModule {
             promise.reject("ANKI_ERROR", e);
         }
     }
+
+    @ReactMethod
+    public void getDuplicateNotes(
+            String deckToCheck,
+            ReadableArray vocabArray,
+            Promise promise) {
+        try {
+            String pkg = AddContentApi.getAnkiDroidPackageName(reactContext);
+            if (pkg == null) {
+                promise.reject("ANKI_UNAVAILABLE", "ANKIDROID API is not available");
+                return;
+            }
+
+            Long modelId = helper.findModelIdByName("Core 2000", 18);
+            if (modelId == null) {
+                promise.resolve("Core 2000 Note Type Not Found");
+                return;
+            }
+
+            List<String> keys = new ArrayList<>();
+            for (int i = 0; i < vocabArray.size(); i++) {
+                keys.add(vocabArray.getString(i));
+            }
+
+            SparseArray<List<NoteInfo>> duplicates = helper.getApi().findDuplicateNotes(modelId, keys);
+
+            JSONArray duplicatesArray = new JSONArray();
+
+            if (duplicates != null && duplicates.size() > 0) { {
+                for (int i = 0; i < duplicates.size(); i++) {
+                    int keyIndex = duplicates.keyAt(i);
+                    List<NoteInfo> noteInfos = duplicates.valueAt(i);
+
+                    for(NoteInfo info: noteInfos) {
+                        duplicatesArray.put(keys.get(keyIndex));
+                    }
+                }
+            }
+                promise.resolve(duplicatesArray.toString());
+            }
+
+        } catch (Exception e) {
+            Log.e("AnkiModule", "Error Getting Cards", e);
+            promise.reject("ANKI_ERROR", e);
+        }
+    }
+
+    // ==============================================================================================================
+
+    // Development Methods
+
+    // ==============================================================================================================
 
     @ReactMethod
     public void addTestNote(Promise promise) {

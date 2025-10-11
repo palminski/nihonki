@@ -51,7 +51,7 @@ export default function App() {
                         name='Settings'
                         component={SettingsScreen}
                         options={{
-                            title: "設定",
+                            title: "Settings",
                             headerStyle: { backgroundColor: "#050505" },
                             headerTintColor: "#fff",
                         }}

@@ -176,7 +176,7 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
     async function handleSendToAnki(cardObject: any) {
         const deckToInsertInto = await loadDeckSetting();
 
-        setOperationRespone(`Adding ${cardObject.kanji} into ${deckToInsertInto ? deckToInsertInto : "DEV DECK"}`)
+        setOperationRespone(`Adding ${cardObject.kanji} into ${deckToInsertInto ? deckToInsertInto : "Nihonki"}`)
 
         const result = await AnkiModule.addNote(
             cardObject.kanji,
@@ -188,7 +188,7 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
             cardObject.exampleSentenceFurigana,
             cardObject.exampleSentenceKana,
             cardObject.exampleSentenceEnglish,
-            deckToInsertInto ? deckToInsertInto : "DEV DECK"
+            deckToInsertInto ? deckToInsertInto : "Nihonki"
         );
         setAddedKanjiMap(map => ({
             ...map,
@@ -332,7 +332,6 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
                         <Text className="text-white text-xs mt-1">Enter Word</Text>
                     </Pressable>
                 </View>
-
             </View>
 
         </ScreenWrapper>
