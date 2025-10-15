@@ -42,29 +42,6 @@ export default function VocabListScreen() {
         }, [])
     )
 
-    async function handleSendToAnki(cardObject: any) {
-        const deckToInsertInto = await loadDeckSetting();
-
-        const result = await AnkiModule.addNote(
-            cardObject.kanji,
-            cardObject.kana,
-            cardObject.furigana,
-            cardObject.meaning,
-            cardObject.partOfSpeech,
-            cardObject.exampleSentenceKanji,
-            cardObject.exampleSentenceFurigana,
-            cardObject.exampleSentenceKana,
-            cardObject.exampleSentenceEnglish,
-            deckToInsertInto ? deckToInsertInto : "DEV DECK"
-        );
-        setAddedKanjiMap(map => ({
-            ...map,
-            [cardObject.kanji]: true,
-        }))
-
-    }
-
-
     return (
         <ScreenWrapper>
             <View className="flex-1 ">

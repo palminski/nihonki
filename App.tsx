@@ -1,7 +1,7 @@
 
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
-import { Pressable } from 'react-native';
+import { Pressable, NativeModules } from 'react-native';
 import './global.css';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -10,13 +10,24 @@ import SettingsScreen from '~/screens/SettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import VocabListScreen from '~/screens/VocabListScreen';
+import { useEffect } from 'react';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 export default function App() {
 
+    const { AnkiModule } = NativeModules;
 
+    useEffect(() => {
+        (async () => {
+            try {
+                await AnkiModule.checkAndRequestPermissions();
+            } catch (error: any) {
+                console.warn("Failed to check permission on startup");
+            }
+        })();
+    }, [])
 
     return (
         <>

@@ -224,30 +224,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
         }
     }
 
-    async function handleSendToAnki(cardObject: any) {
-        const deckToInsertInto = await loadDeckSetting();
-
-        setOperationRespone(`Adding ${cardObject.kanji} into ${deckToInsertInto ? deckToInsertInto : "Nihonki"}`)
-
-        const result = await AnkiModule.addNote(
-            cardObject.kanji,
-            cardObject.kana,
-            cardObject.furigana,
-            cardObject.meaning,
-            cardObject.partOfSpeech,
-            cardObject.exampleSentenceKanji,
-            cardObject.exampleSentenceFurigana,
-            cardObject.exampleSentenceKana,
-            cardObject.exampleSentenceEnglish,
-            deckToInsertInto ? deckToInsertInto : "Nihonki"
-        );
-        setAddedKanjiMap(map => ({
-            ...map,
-            [cardObject.kanji]: true,
-        }))
-        setOperationRespone(`${result}!`);
-    }
-
     const HandleFormChange = async (value: string) => {
         setInputText(value);
     }

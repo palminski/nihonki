@@ -4,6 +4,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
 import android.util.SparseArray;
+import android.app.Activity;
 
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -61,6 +62,8 @@ public class AnkiModule extends ReactContextBaseJavaModule {
                 promise.reject("ANKI_UNAVAILABLE", "ANKIDROID API is not available");
                 return;
             }
+
+            if (!handlePermissions(promise)) return;
 
             // Ensure Deck Exists
             Long deckId = helper.findDeckIdByName(deckToInsertInto);
@@ -131,6 +134,8 @@ public class AnkiModule extends ReactContextBaseJavaModule {
                 return;
             }
 
+            if (!handlePermissions(promise)) return;
+
             Long modelId = helper.findModelIdByName("Core 2000", 18);
             if (modelId == null) {
                 promise.resolve("Core 2000 Note Type Not Found");
@@ -146,16 +151,17 @@ public class AnkiModule extends ReactContextBaseJavaModule {
 
             JSONArray duplicatesArray = new JSONArray();
 
-            if (duplicates != null && duplicates.size() > 0) { {
-                for (int i = 0; i < duplicates.size(); i++) {
-                    int keyIndex = duplicates.keyAt(i);
-                    List<NoteInfo> noteInfos = duplicates.valueAt(i);
+            if (duplicates != null && duplicates.size() > 0) {
+                {
+                    for (int i = 0; i < duplicates.size(); i++) {
+                        int keyIndex = duplicates.keyAt(i);
+                        List<NoteInfo> noteInfos = duplicates.valueAt(i);
 
-                    for(NoteInfo info: noteInfos) {
-                        duplicatesArray.put(keys.get(keyIndex));
+                        for (NoteInfo info : noteInfos) {
+                            duplicatesArray.put(keys.get(keyIndex));
+                        }
                     }
                 }
-            }
                 promise.resolve(duplicatesArray.toString());
             }
 
@@ -163,6 +169,25 @@ public class AnkiModule extends ReactContextBaseJavaModule {
             Log.e("AnkiModule", "Error Getting Cards", e);
             promise.reject("ANKI_ERROR", e);
         }
+    }
+
+    @ReactMethod
+    public void checkAndRequestPermissions(Promise promise) {
+        handlePermissions(promise);
+    }
+
+    private boolean handlePermissions(Promise promise) {
+        Activity activity = getCurrentActivity();
+        if (activity == null) {
+            promise.reject("ANKI_NO_ACTIVITY", "No active activity to request this permission");
+            return false;
+        }
+        if (helper.shouldRequestPermission()) {
+            helper.requestPermission(activity, 0);
+            promise.resolve("requested permissions");
+            return false;
+        }
+        return true;
     }
 
     // ==============================================================================================================
