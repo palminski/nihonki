@@ -10,13 +10,12 @@ import { Ionicons } from "@expo/vector-icons";
 import LinearGradient from "react-native-linear-gradient";
 import { NavigationProp } from "@react-navigation/native";
 import VocabCard from "~/components/VocabCard";
+import ImageView from "react-native-image-viewing";
 
 
 export default function HomeScreen({ navigation }: { navigation: NavigationProp<any> }) {
 
     const { AnkiModule } = NativeModules;
-
-
 
     const [currentRequests, setCurrentRequests] = useState<Record<string, string>>({});
 
@@ -29,7 +28,22 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
     const [kanjiObjectArray, setKanjiObjectArray] = useState<Array<any>>([]);
     const [addedKanjiMap, setAddedKanjiMap] = useState<Record<string, boolean>>({});
 
+    const [snappedImages, setSnappedImages] = useState<any[]>([]);
+    const [imageViewerVisible, setImageViewerVisible] = useState(false);
+    const [imageIndex, setImageIndex] = useState(0);
     const textInputRef = useRef<TextInput>(null);
+
+    const images = [
+        {
+            uri: "https://images.unsplash.com/photo-1571501679680-de32f1e7aad4",
+        },
+        {
+            uri: "https://images.unsplash.com/photo-1573273787173-0eb81a833b34",
+        },
+        {
+            uri: "https://images.unsplash.com/photo-1569569970363-df7b6160d111",
+        },
+    ];
 
     async function handleOpenCamera() {
 
@@ -57,10 +71,10 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 return;
             };
 
-            setCurrentRequests({
-                ...currentRequests,
+            setCurrentRequests(prev => ({
+                ...prev,
                 [cameraRequestId]: asset.uri
-            });
+            }));
 
             try {
                 const openai = new OpenAI({
@@ -87,6 +101,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     const { [cameraRequestId]: _, ...rest } = prev
                     return rest
                 });
+                setSnappedImages(prevItems => [...prevItems, {uri: asset.uri}])
 
                 setOperationRespone(response.output_text);
                 const jsonString = response.output_text?.trim();
@@ -110,10 +125,16 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     }
                     vocabList[cardObject.kanji] = cardObject;
                 });
-                updateVocabList(vocabList);
-                const filteredKanjiObjectArray = kanjiObjectArray.filter((kanjiObject) => { return !cardObjectArray.some((cardObject) => cardObject.kanji == kanjiObject.kanji) });
+                await updateVocabList(vocabList);
 
-                setKanjiObjectArray([...cardObjectArray, ...filteredKanjiObjectArray]);
+                
+                setKanjiObjectArray(prev => {
+                    const filteredPrev = prev.filter(
+                        kanjiObjectArray => !cardObjectArray.some(cardObject => cardObject.kanji === kanjiObjectArray.kanji)
+                    );
+                    return [...cardObjectArray, ...filteredPrev]
+                });
+
             } catch (error: any) {
                 // setOperationRespone("ERROR");
                 setCurrentRequests(prev => {
@@ -128,6 +149,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
     const handleTextSubmit = async (textToSend: string) => {
         // if (requestInProgress) return;
 
+        setIsPictureMode(true);
 
         if (textToSend == null || textToSend == "") return;
         const key = await loadAPIKeySetting();
@@ -142,10 +164,10 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             });
             setInputText("");
 
-            setCurrentRequests({
-                ...currentRequests,
+            setCurrentRequests(prev => ({
+                ...prev,
                 [textToSend]: "text"
-            });
+            }));
 
             const response = await openai.chat.completions.create({
                 model: "gpt-4.1-mini",
@@ -167,8 +189,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 return rest
             });
 
-
-            // 
             const jsonString = response.choices[0].message.content;
             if (jsonString !== null) {
                 const cardObject = JSON.parse(jsonString);
@@ -182,7 +202,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     const filtered = prev.filter(k => k.kanji !== cardObject.kanji);
                     return [cardObject, ...filtered]
                 })
-                setIsPictureMode(true);
 
                 let vocabList = await loadVocabList()
                 vocabList[cardObject.kanji] = cardObject;
@@ -277,15 +296,22 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     {
                         isPictureMode ?
                             <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
-                                <View className="">
+                                <ScrollView horizontal className="">
                                     {
-                                        imageUri && (
-                                            <>
-                                                <Image source={{ uri: imageUri }} style={{ width: 100, height: 100 }} />
-                                            </>
-                                        )
+                                        snappedImages.reverse().map((image, index) => (
+                                            <Pressable key={index} onPress={() => { setImageViewerVisible(true); setImageIndex(index) }}>
+                                                <Image source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />
+
+                                            </Pressable>
+                                        ))
                                     }
-                                </View>
+                                    <ImageView
+                                        images={snappedImages}
+                                        imageIndex={imageIndex}
+                                        visible={imageViewerVisible}
+                                        onRequestClose={() => setImageViewerVisible(false)}
+                                    />
+                                </ScrollView>
                             </View>
                             :
                             <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
