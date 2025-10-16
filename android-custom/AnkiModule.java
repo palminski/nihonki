@@ -218,6 +218,14 @@ public class AnkiModule extends ReactContextBaseJavaModule {
                 <div id="example-sentence" class="japanese" style="font-size:40px;">{{Expression}}</div>
                                                 """;
         String backTemplate = """
+                <style>
+                body {
+                    background-size: cover;
+                    background: linear-gradient(to top, #2c0042 1%, rgba(0,0,0,0) 99%);
+                    background-repeat: no-repeat;
+                    background-position: bottom;
+                }
+                </style>
                 <div>{{Vocabulary-Audio}}{{Sentence-Audio}}</div>
                 <div class="japanese" style="font-size:60px;">{{furigana:Vocabulary-Furigana}}</div>
 
@@ -237,7 +245,7 @@ public class AnkiModule extends ReactContextBaseJavaModule {
                 <div style="font-size: 10pt;">{{Frequency}}</div>
                                                 """;
         String css = """
-                                @font-face { font-family: stroke; src: url('_stroke.ttf'); }
+                @font-face { font-family: stroke; src: url('_stroke.ttf'); }
                 @font-face { font-family: textbook; src: url('_HGSKyokashotai.ttf'); }
                 @font-face {
                    font-family: 'notosans';
@@ -264,13 +272,6 @@ public class AnkiModule extends ReactContextBaseJavaModule {
                     min-height: 100%;
                     margin: 0px;
                     padding: 0px;
-                }
-
-                body {
-                    background-size: cover;
-                    background: linear-gradient(to top, #2c0042 1%, rgba(0,0,0,0) 99%);
-                    background-repeat: no-repeat;
-                    background-position: bottom;
                 }
 
                 img {

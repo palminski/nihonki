@@ -13,6 +13,7 @@ import VocabCard from "~/components/VocabCard";
 import ImageView from "react-native-image-viewing";
 import axios from "axios";
 
+
 export default function HomeScreen({ navigation }: { navigation: NavigationProp<any> }) {
 
     const { AnkiModule } = NativeModules;
@@ -55,8 +56,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
             const key = await loadAPIKeySetting();
             if (key == null || key == "") {
-                setOperationRespone(`An API key is required`);
-                return;
+                // setOperationRespone(`An API key is required`);
+                // return;
             };
 
             setCurrentRequests(prev => ({
@@ -65,25 +66,11 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             }));
 
             try {
-                const openai = new OpenAI({
-                    apiKey: `${key}`
-                });
-
-                const response = await openai.responses.create({
-                    model: "gpt-4.1-mini",
-                    input: [{
-                        role: "user",
-                        content: [
-                            { type: "input_text", text: systemInstructionText },
-                            { type: "input_text", text: imageInstructionText },
-                            {
-                                type: "input_image",
-                                image_url: `data:image/jpeg;base64,${asset.base64}`,
-                                detail: "auto",
-                            },
-                        ],
-                    }],
-                });
+                const response = await axios.post(
+                // Hard Coding While Testing
+                `http://10.0.0.187:8000/api/ai_translation/image`,
+                {imageBase64: asset.base64},
+                {});
 
                 setCurrentRequests(prev => {
                     const { [cameraRequestId]: _, ...rest } = prev
@@ -91,8 +78,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 });
                 setSnappedImages(prevItems => [{uri: asset.uri}, ...prevItems])
 
-                setOperationRespone(response.output_text);
-                const jsonString = response.output_text?.trim();
+                const jsonString = response.data.message;
+                
                 let cardObjectArray = [];
 
                 if (jsonString) {
@@ -206,8 +193,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
         }, 1)
     }
 
-
-
     function ValidateCardData(data: any): { valid: boolean; missing: string[] } {
         let requiredFields = [
             "kanji",
@@ -243,13 +228,16 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                         isPictureMode ?
                             <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
                                 <ScrollView horizontal className="">
-                                    {
+                                    {   
+                                    snappedImages.length > 0 ?
                                         snappedImages.reverse().map((image, index) => (
                                             <Pressable key={index} onPress={() => { setImageViewerVisible(true); setImageIndex(index) }}>
                                                 <Image source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />
 
                                             </Pressable>
                                         ))
+                                        :
+                                        <Text className="text-purple-400/50 text-lg mt-auto  pl-3 pb-2">Scanned Images Will Appear Here...</Text>
                                     }
                                     <ImageView
                                         images={snappedImages}
