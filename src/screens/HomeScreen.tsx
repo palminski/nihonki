@@ -11,7 +11,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { NavigationProp } from "@react-navigation/native";
 import VocabCard from "~/components/VocabCard";
 import ImageView from "react-native-image-viewing";
-
+import axios from "axios";
 
 export default function HomeScreen({ navigation }: { navigation: NavigationProp<any> }) {
 
@@ -32,18 +32,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
     const [imageViewerVisible, setImageViewerVisible] = useState(false);
     const [imageIndex, setImageIndex] = useState(0);
     const textInputRef = useRef<TextInput>(null);
-
-    const images = [
-        {
-            uri: "https://images.unsplash.com/photo-1571501679680-de32f1e7aad4",
-        },
-        {
-            uri: "https://images.unsplash.com/photo-1573273787173-0eb81a833b34",
-        },
-        {
-            uri: "https://images.unsplash.com/photo-1569569970363-df7b6160d111",
-        },
-    ];
 
     async function handleOpenCamera() {
 
@@ -101,7 +89,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     const { [cameraRequestId]: _, ...rest } = prev
                     return rest
                 });
-                setSnappedImages(prevItems => [...prevItems, {uri: asset.uri}])
+                setSnappedImages(prevItems => [{uri: asset.uri}, ...prevItems])
 
                 setOperationRespone(response.output_text);
                 const jsonString = response.output_text?.trim();
@@ -147,79 +135,61 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
     }
 
     const handleTextSubmit = async (textToSend: string) => {
-        // if (requestInProgress) return;
-
         setIsPictureMode(true);
-
         if (textToSend == null || textToSend == "") return;
+        
+        
+        //Handle Provided Key Here Later
         const key = await loadAPIKeySetting();
         if (key == null || key == "") {
-            setOperationRespone(`An API key is required`);
-            return;
+            // setOperationRespone(`An API key is required`);
+            // return;
         };
-        setOperationRespone(`Loading...`);
-        try {
-            const openai = new OpenAI({
-                apiKey: `${key}`
-            });
-            setInputText("");
 
+        try {
+            setInputText("");
             setCurrentRequests(prev => ({
                 ...prev,
                 [textToSend]: "text"
             }));
 
-            const response = await openai.chat.completions.create({
-                model: "gpt-4.1-mini",
-                response_format: { type: "json_object" },
-                messages: [
-                    {
-                        role: "system",
-                        content: systemInstructionText
-                    },
-                    {
-                        role: "user",
-                        content: generateInstructionsForWord(textToSend)
-                    }
-                ]
-            });
+            const response = await axios.post(
+                // Hard Coding While Testing
+                `http://10.0.0.187:8000/api/ai_translation/single_word`,
+                {wordToTranslate: textToSend},
+                {});
 
             setCurrentRequests(prev => {
                 const { [textToSend]: _, ...rest } = prev
                 return rest
             });
 
-            const jsonString = response.choices[0].message.content;
+            const jsonString = response.data.message;
+
             if (jsonString !== null) {
+                //Validate Response
                 const cardObject = JSON.parse(jsonString);
                 const { valid, missing } = ValidateCardData(cardObject);
                 if (!valid) {
-                    setOperationRespone(`There was an issue getting card data. Please Try Again. Response:${jsonString}`);
+                    Alert.alert("Something was wrong with the response");
                     return;
                 }
-
+                //Add Vocab Word To VOcab Word Array
                 setKanjiObjectArray(prev => {
                     const filtered = prev.filter(k => k.kanji !== cardObject.kanji);
                     return [cardObject, ...filtered]
                 })
-
+                // Update App Vocab List
                 let vocabList = await loadVocabList()
                 vocabList[cardObject.kanji] = cardObject;
                 updateVocabList(vocabList);
             }
 
-            setOperationRespone("Complete!");
-
-
-
         } catch (error: any) {
-            setOperationRespone("ERROR");
-
             setCurrentRequests(prev => {
                 const { [textToSend]: _, ...rest } = prev
                 return rest
             });
-
             alert(error?.message);
         }
     }

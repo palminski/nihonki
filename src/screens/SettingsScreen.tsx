@@ -6,6 +6,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import LinearGradient from "react-native-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { loadVocabList } from "~/utils/asyncStorageManager";
+import axios from "axios";
 
 export default function SettingsScreen() {
 
@@ -58,14 +59,15 @@ export default function SettingsScreen() {
     const debug = async () => {
         setLoading(true);
         try {
-            let fetchedVocabList = await loadVocabList();
-
-            let resonse = await AnkiModule.getDuplicateNotes("", Object.keys(fetchedVocabList));
-            setDebugResponse(resonse);
+            const response = await axios.post(
+                `http://10.0.0.187:8000/api/openai`,
+                {wordToTranslate: "騎士団"},
+                {});
+                setDebugResponse(response.data.message);
+                setLoading(false);
+        } catch (error: any) {
             setLoading(false);
-        } catch (error) {
-            setLoading(false);
-            Alert.alert("error");
+            Alert.alert(error?.message ? error.message : "ERROR");
         }
 
     }

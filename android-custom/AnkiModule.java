@@ -141,9 +141,9 @@ public class AnkiModule extends ReactContextBaseJavaModule {
             if (!handlePermissions(promise))
                 return;
 
-            Long modelId = helper.findModelIdByName("Core 2000", 18);
+            Long modelId = helper.findModelIdByName("Nihonki Card", 18);
             if (modelId == null) {
-                promise.resolve("Core 2000 Note Type Not Found");
+                promise.resolve("Nihonki Card Note Type Not Found");
                 return;
             }
 
@@ -260,6 +260,19 @@ public class AnkiModule extends ReactContextBaseJavaModule {
                  background-color: Black;
                 }
 
+                html, body {
+                    min-height: 100%;
+                    margin: 0px;
+                    padding: 0px;
+                }
+
+                body {
+                    background-size: cover;
+                    background: linear-gradient(to top, #2c0042 1%, rgba(0,0,0,0) 99%);
+                    background-repeat: no-repeat;
+                    background-position: bottom;
+                }
+
                 img {
                  max-height: 150px;
                  margin: 10px;
@@ -295,15 +308,14 @@ public class AnkiModule extends ReactContextBaseJavaModule {
         String[] afmt = new String[] { backTemplate };
 
         Long newModelId = api.addNewCustomModel(
-            "Nihonki Card",
-            fields,
-            cards,
-            qfmt,
-            afmt,
-            css,
-            deckIdString,
-            0
-        );
+                "Nihonki Card",
+                fields,
+                cards,
+                qfmt,
+                afmt,
+                css,
+                deckIdString,
+                0);
         return newModelId;
     }
 
