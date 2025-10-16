@@ -1,10 +1,17 @@
 package com.palminski.nihonki;
 
 import android.content.Context;
+import android.os.Build;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import android.content.pm.PackageManager;
+import android.app.Activity;
 
 import com.ichi2.anki.api.AddContentApi;
 
 import java.util.Map;
+
+import static com.ichi2.anki.api.AddContentApi.READ_WRITE_PERMISSION;
 
 public class AnkiDroidHelper {
     private final AddContentApi mApi;
@@ -45,4 +52,22 @@ public class AnkiDroidHelper {
         }
         return null;
     }
+
+    public boolean shouldRequestPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return false;
+        }
+        return ContextCompat.checkSelfPermission(mContext, READ_WRITE_PERMISSION) != PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Request permission from the user to access the AnkiDroid API (for SDK 23+)
+     * @param callbackActivity An Activity which implements onRequestPermissionsResult()
+     * @param callbackCode The callback code to be used in onRequestPermissionsResult()
+     */
+    public void requestPermission(Activity callbackActivity, int callbackCode) {
+        ActivityCompat.requestPermissions(callbackActivity, new String[]{READ_WRITE_PERMISSION}, callbackCode);
+    }
+
+    
 }

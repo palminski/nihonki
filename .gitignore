@@ -14,7 +14,7 @@ web-build/
 
 
 ios
-# android
+android
 
 # macOS
 .DS_Store

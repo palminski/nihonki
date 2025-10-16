@@ -9,12 +9,15 @@ import OpenAI from "openai";
 import { Ionicons } from "@expo/vector-icons";
 import LinearGradient from "react-native-linear-gradient";
 import { NavigationProp } from "@react-navigation/native";
+import VocabCard from "~/components/VocabCard";
+import ImageView from "react-native-image-viewing";
+import axios from "axios";
 
-export default function HomeScreen({navigation}: {navigation: NavigationProp<any>}) {
+export default function HomeScreen({ navigation }: { navigation: NavigationProp<any> }) {
 
     const { AnkiModule } = NativeModules;
 
-    const [requestInProgress, setRequestInProgress] = useState<boolean>(false);
+    const [currentRequests, setCurrentRequests] = useState<Record<string, string>>({});
 
     const [imageUri, setImageUri] = useState<string | null>(null);
     const [inputText, setInputText] = useState<string>("");
@@ -25,15 +28,14 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
     const [kanjiObjectArray, setKanjiObjectArray] = useState<Array<any>>([]);
     const [addedKanjiMap, setAddedKanjiMap] = useState<Record<string, boolean>>({});
 
+    const [snappedImages, setSnappedImages] = useState<any[]>([]);
+    const [imageViewerVisible, setImageViewerVisible] = useState(false);
+    const [imageIndex, setImageIndex] = useState(0);
     const textInputRef = useRef<TextInput>(null);
-
-    
-
-
 
     async function handleOpenCamera() {
 
-        if (requestInProgress) return;
+        const cameraRequestId = `Camera_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         setIsPictureMode(true);
         if (permission.status !== 'granted') {
@@ -56,15 +58,19 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
                 setOperationRespone(`An API key is required`);
                 return;
             };
-            setOperationRespone(`Loading...`);
+
+            setCurrentRequests(prev => ({
+                ...prev,
+                [cameraRequestId]: asset.uri
+            }));
 
             try {
                 const openai = new OpenAI({
                     apiKey: `${key}`
                 });
-                setRequestInProgress(true);
+
                 const response = await openai.responses.create({
-                    model: "gpt-4o-mini",
+                    model: "gpt-4.1-mini",
                     input: [{
                         role: "user",
                         content: [
@@ -78,7 +84,13 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
                         ],
                     }],
                 });
-                setRequestInProgress(false);
+
+                setCurrentRequests(prev => {
+                    const { [cameraRequestId]: _, ...rest } = prev
+                    return rest
+                });
+                setSnappedImages(prevItems => [{uri: asset.uri}, ...prevItems])
+
                 setOperationRespone(response.output_text);
                 const jsonString = response.output_text?.trim();
                 let cardObjectArray = [];
@@ -91,7 +103,7 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
                     return;
                 }
                 setOperationRespone("Complete!");
-                
+
                 let vocabList = await loadVocabList()
                 cardObjectArray.forEach(cardObject => {
                     const { valid, missing } = ValidateCardData(cardObject);
@@ -101,100 +113,85 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
                     }
                     vocabList[cardObject.kanji] = cardObject;
                 });
-                updateVocabList(vocabList);
-                const filteredKanjiObjectArray = kanjiObjectArray.filter((kanjiObject) => { return !cardObjectArray.some((cardObject) => cardObject.kanji == kanjiObject.kanji) });
+                await updateVocabList(vocabList);
 
-                setKanjiObjectArray([...cardObjectArray, ...filteredKanjiObjectArray]);
+                
+                setKanjiObjectArray(prev => {
+                    const filteredPrev = prev.filter(
+                        kanjiObjectArray => !cardObjectArray.some(cardObject => cardObject.kanji === kanjiObjectArray.kanji)
+                    );
+                    return [...cardObjectArray, ...filteredPrev]
+                });
+
             } catch (error: any) {
                 // setOperationRespone("ERROR");
-                setRequestInProgress(false);
+                setCurrentRequests(prev => {
+                    const { [cameraRequestId]: _, ...rest } = prev
+                    return rest
+                });
                 alert(error?.message);
             }
         }
     }
 
-    const handleTextSubmit = async () => {
-        if (requestInProgress) return;
-        if (inputText == null || inputText == "") return;
+    const handleTextSubmit = async (textToSend: string) => {
+        setIsPictureMode(true);
+        if (textToSend == null || textToSend == "") return;
+        
+        
+        //Handle Provided Key Here Later
         const key = await loadAPIKeySetting();
         if (key == null || key == "") {
-            setOperationRespone(`An API key is required`);
-            return;
+            // setOperationRespone(`An API key is required`);
+            // return;
         };
-        setOperationRespone(`Loading...`);
-        try {
-            const openai = new OpenAI({
-                apiKey: `${key}`
-            });
-            setRequestInProgress(true);
-            const response = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
-                response_format: { type: "json_object" },
-                messages: [
-                    {
-                        role: "system",
-                        content: systemInstructionText
-                    },
-                    {
-                        role: "user",
-                        content: generateInstructionsForWord(inputText)
-                    }
-                ]
-            });
-            setRequestInProgress(false);
 
-            // 
-            const jsonString = response.choices[0].message.content;
+        try {
+            setInputText("");
+            setCurrentRequests(prev => ({
+                ...prev,
+                [textToSend]: "text"
+            }));
+
+            const response = await axios.post(
+                // Hard Coding While Testing
+                `http://10.0.0.187:8000/api/ai_translation/single_word`,
+                {wordToTranslate: textToSend},
+                {});
+
+            setCurrentRequests(prev => {
+                const { [textToSend]: _, ...rest } = prev
+                return rest
+            });
+
+            const jsonString = response.data.message;
+
             if (jsonString !== null) {
+                //Validate Response
                 const cardObject = JSON.parse(jsonString);
                 const { valid, missing } = ValidateCardData(cardObject);
                 if (!valid) {
-                    setOperationRespone(`There was an issue getting card data. Please Try Again. Response:${jsonString}`);
+                    Alert.alert("Something was wrong with the response");
                     return;
                 }
-                const filteredKanjiObjectArray = kanjiObjectArray.filter((kanji) => { return kanji.kanji !== cardObject.kanji });
-                setKanjiObjectArray([cardObject, ...filteredKanjiObjectArray]);
-                setInputText("");
-                setIsPictureMode(true);
-
+                //Add Vocab Word To VOcab Word Array
+                setKanjiObjectArray(prev => {
+                    const filtered = prev.filter(k => k.kanji !== cardObject.kanji);
+                    return [cardObject, ...filtered]
+                })
+                // Update App Vocab List
                 let vocabList = await loadVocabList()
                 vocabList[cardObject.kanji] = cardObject;
                 updateVocabList(vocabList);
             }
 
-            setOperationRespone("Complete!");
-
-
-
         } catch (error: any) {
-            setOperationRespone("ERROR");
-            setRequestInProgress(false);
+            setCurrentRequests(prev => {
+                const { [textToSend]: _, ...rest } = prev
+                return rest
+            });
             alert(error?.message);
         }
-    }
-
-    async function handleSendToAnki(cardObject: any) {
-        const deckToInsertInto = await loadDeckSetting();
-
-        setOperationRespone(`Adding ${cardObject.kanji} into ${deckToInsertInto ? deckToInsertInto : "DEV DECK"}`)
-
-        const result = await AnkiModule.addNote(
-            cardObject.kanji,
-            cardObject.kana,
-            cardObject.furigana,
-            cardObject.meaning,
-            cardObject.partOfSpeech,
-            cardObject.exampleSentenceKanji,
-            cardObject.exampleSentenceFurigana,
-            cardObject.exampleSentenceKana,
-            cardObject.exampleSentenceEnglish,
-            deckToInsertInto ? deckToInsertInto : "DEV DECK"
-        );
-        setAddedKanjiMap(map => ({
-            ...map,
-            [cardObject.kanji]: true,
-        }))
-        setOperationRespone(`${result}!`);
     }
 
     const HandleFormChange = async (value: string) => {
@@ -243,36 +240,30 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
 
                     {/* INPUT AND STATUS BOX */}
                     {
-                        isPictureMode || requestInProgress ?
+                        isPictureMode ?
                             <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
-                                <View className="">
+                                <ScrollView horizontal className="">
                                     {
-                                        imageUri && (
-                                            <>
-                                                <Image source={{ uri: imageUri }} style={{ width: 100, height: 100 }} />
-                                            </>
-                                        )
-                                    }
-                                </View>
-                                <View className={`p-2 flex-1 ${requestInProgress && 'justify-center'}`}>
+                                        snappedImages.reverse().map((image, index) => (
+                                            <Pressable key={index} onPress={() => { setImageViewerVisible(true); setImageIndex(index) }}>
+                                                <Image source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />
 
-                                    {
-                                        requestInProgress
-                                            ?
-                                            <View className="w-full  flex items-center">
-                                                <ActivityIndicator size={50} color={'#A855F7'} />
-                                                <Text className="text-purple-500">Requesting</Text>
-                                            </View>
-                                            :
-                                            <Text className="text-purple-300 text-lg">{operationResponse ?? "Awaiting Action"}</Text>
+                                            </Pressable>
+                                        ))
                                     }
-                                </View>
+                                    <ImageView
+                                        images={snappedImages}
+                                        imageIndex={imageIndex}
+                                        visible={imageViewerVisible}
+                                        onRequestClose={() => setImageViewerVisible(false)}
+                                    />
+                                </ScrollView>
                             </View>
                             :
                             <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
                                 <View className="border border-r-purple-600">
-                                    <TextInput onSubmitEditing={handleTextSubmit} ref={textInputRef} className='border border-purple-600 text-lg text-purple-300 placeholder:text-purple-300/50 rounded m-2' value={inputText} onChangeText={(text) => HandleFormChange(text)} placeholder='言葉こちら' />
-                                    <Pressable onPress={handleTextSubmit} className="m-2 border p-2 bg-purple-800 border-purple-600 rounded flex-row items-center">
+                                    <TextInput onSubmitEditing={() => handleTextSubmit(inputText)} ref={textInputRef} className='border border-purple-600 text-lg text-purple-300 placeholder:text-purple-300/50 rounded m-2' value={inputText} onChangeText={(text) => HandleFormChange(text)} placeholder='言葉こちら' />
+                                    <Pressable onPress={() => handleTextSubmit(inputText)} className="m-2 border p-2 bg-purple-800 border-purple-600 rounded flex-row items-center">
                                         <Text className=" text-white">Submit Word</Text>
                                     </Pressable>
                                 </View>
@@ -283,29 +274,37 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
                     }
 
 
+                    {
+
+                        Object.entries(currentRequests).map(([key, value]) => (
+                            <View key={key} className="my-2  shadow-purple-800 border border-purple-300 p-3 bg-black/20  rounded">
+                                <View className="flex flex-row justify-start items-center ">
+                                    <View>
+                                        <ActivityIndicator size={50} color={'#A855F7'} />
+                                    </View>
+                                    <View className="mx-auto">
+                                        {
+                                            value === "text" ?
+                                                <Text className="text-purple-300 text-lg">Loading Request For <Text className="font-semibold">{key}</Text></Text>
+                                                :
+                                                <Text className="text-purple-300 text-lg">Loading Image</Text>
+                                        }
+                                    </View>
+                                    {
+                                        (value !== "text") && <Image className="rounded border border-purple-800" source={{ uri: value }} style={{ width: 100, height: 100 }} />
+                                    }
+
+                                </View>
+                            </View>
+                        ))
+                    }
+
+
+
                     {/* Kanji List */}
                     {kanjiObjectArray.map((kanji: any, index: number) => (
-                        <View key={index} className="my-2 shadow-lg shadow-purple-800 border border-purple-500 p-3 bg-purple-950 flex flex-row justify-between items-end rounded">
-                            <View className="flex-1 mr-2">
-                                <Text className="text-purple-300 mb-1">
-                                    <Text className="text-2xl text-purple-200">{kanji.kanji}</Text> - <Text className="text text-purple-200">[ {kanji.kana} ]</Text>
-                                </Text>
-                                <Text className=" text-purple-300 text-sm">
-                                    {kanji.meaning}
-                                </Text>
-                            </View>
-                            {
-                                !addedKanjiMap[kanji.kanji] ?
-                                    <Pressable onPress={() => handleSendToAnki(kanji)} className="border p-2 bg-purple-800 border-purple-600 rounded flex-row items-center">
-                                        <Text className=" text-white">Send to Anki</Text>
-                                        <Ionicons className="ml-2" name="send-outline" size={12} color={"#fff"} />
-                                    </Pressable>
-                                    :
-                                    <Pressable className="border p-2 border-purple-800 bg-purple-950 rounded flex-row items-center">
-                                        <Text className=" text-purple-400">Card Added!</Text>
-                                        <Ionicons className="ml-2" name="checkmark-outline" size={12} color={"#C084FC"} />
-                                    </Pressable>
-                            }
+                        <View key={kanji.kanji}>
+                            <VocabCard vocabWord={kanji} />
                         </View>
                     ))}
 
@@ -332,7 +331,6 @@ export default function HomeScreen({navigation}: {navigation: NavigationProp<any
                         <Text className="text-white text-xs mt-1">Enter Word</Text>
                     </Pressable>
                 </View>
-
             </View>
 
         </ScreenWrapper>
