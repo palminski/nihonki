@@ -60,7 +60,7 @@ export default function SettingsScreen() {
         setLoading(true);
         try {
             const response = await axios.post(
-                `http://10.0.0.187:8000/api/openai`,
+                `http://10.0.0.187:8000/api/hello`,
                 {wordToTranslate: "騎士団"},
                 {});
                 setDebugResponse(response.data.message);

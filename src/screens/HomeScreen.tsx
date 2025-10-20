@@ -69,7 +69,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 const response = await axios.post(
                 // Hard Coding While Testing
                 `http://10.0.0.187:8000/api/ai_translation/image`,
-                {imageBase64: asset.base64},
+                // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
+                {imageBase64: asset.base64, apiKey: key},
                 {});
 
                 setCurrentRequests(prev => {
@@ -143,7 +144,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             const response = await axios.post(
                 // Hard Coding While Testing
                 `http://10.0.0.187:8000/api/ai_translation/single_word`,
-                {wordToTranslate: textToSend},
+                // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
+                {wordToTranslate: textToSend, apiKey: key},
                 {});
 
             setCurrentRequests(prev => {
