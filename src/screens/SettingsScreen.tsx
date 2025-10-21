@@ -94,16 +94,29 @@ export default function SettingsScreen() {
                 >
 
                     <View className="mb-3">
-                        <Text className="text-white text-lg">
-                            Anki Deck To Insert Into
-                        </Text>
-                        <TextInput className='bg-black border mb-2 shadow-lg shadow-purple-300 border-purple-800 my-1 rounded text-purple-300 placeholder:text-purple-300/50' value={settingForm.insertDeck} onChangeText={(text) => handleFormChange('insertDeck', text)} placeholder='Deck Name (Defaults to Nihonki)' />
+                        <View className="flex-row items-center">
+                            <Text className="text-white text-lg mr-2">
+                                Anki Deck To Insert Into
+                            </Text>
+                            <Pressable onPress={() => Alert.alert("Anki Deck To Insert Into", "When send to anki is clicked this is the deck new cards will be inserted into. If no deck with the given name exists a new one will be made. If no text is entered here it will default to Umeboshi")} className="items-center">
+                                <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
+                            </Pressable>
+                        </View>
+                        <TextInput className='bg-black border mb-2 shadow-lg shadow-purple-300 border-purple-800 my-1 rounded text-purple-300 placeholder:text-purple-300/50' value={settingForm.insertDeck} onChangeText={(text) => handleFormChange('insertDeck', text)} placeholder='Deck Name (Defaults to Umeboshi)' />
                     </View>
 
                     <View className="mb-3">
-                        <Text className="text-white text-lg">
-                            OpenAi API Key
-                        </Text>
+
+                        <View className="flex-row items-center">
+                            <Text className="text-white text-lg mr-2">
+                                OpenAi API Key
+                            </Text>
+                            <Pressable onPress={() => Alert.alert("OpenAi API Key", "If you have your own API key for open AI you can use it instead of a subscription. Your key is never sent to our servers. It is stored on your device and used to communicate with OpenAi directly.")} className="items-center">
+                                <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
+                            </Pressable>
+                        </View>
+
+
                         <TextInput secureTextEntry={true} className='bg-black border mb-2 shadow-lg shadow-purple-300 border-purple-800 my-1 rounded text-purple-300 placeholder:text-purple-300/50' value={settingForm.apiKey} onChangeText={(text) => handleFormChange('apiKey', text)} placeholder='Personal Api Key' />
                     </View>
 
@@ -117,7 +130,7 @@ export default function SettingsScreen() {
 
                                 <View className="mb-6">
                                     <Pressable onPress={() => purchaseSubscription()} className="border p-3 bg-purple-800 border-purple-600 rounded flex-row items-center">
-                                        <Text className="mx-auto text-white">Purchase Subscription</Text>
+                                        <Text className="mx-auto text-white">Purchase Subscription ($5.99 / month)</Text>
                                     </Pressable>
                                 </View>
 

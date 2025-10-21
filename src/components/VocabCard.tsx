@@ -46,7 +46,7 @@ export default function VocabCard({ vocabWord, hasBeenSent = false }: VocabCardP
                 cardObject.exampleSentenceFurigana,
                 cardObject.exampleSentenceKana,
                 cardObject.exampleSentenceEnglish,
-                deckToInsertInto ? deckToInsertInto : "Nihonki"
+                deckToInsertInto ? deckToInsertInto : "Umeboshi"
             );
             setIsAdded(true)
         } catch (error) {

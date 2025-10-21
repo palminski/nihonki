@@ -60,7 +60,7 @@ export default function App() {
                         name='Home'
                         component={HomeScreen}
                         options={({ navigation }) => ({
-                            title: "Nihonki",
+                            title: "Umeboshi",
 
                             headerRight: () => (
                                 <Pressable onPress={() => { navigation.navigate("Settings") }} style={{ marginRight: 15 }}>

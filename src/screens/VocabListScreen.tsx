@@ -54,7 +54,7 @@ export default function VocabListScreen() {
                 >
 
                     {/* Kanji List */}
-                    {Object.entries(vocabList).map(([keyName, kanji], keyIndex) => {
+                    {Object.entries(vocabList).toReversed().map(([keyName, kanji], keyIndex) => {
 
                         if (!kanji || !kanji.kanji) return null;
                         return (

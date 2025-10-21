@@ -55,7 +55,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             cameraType: ImagePicker.CameraType.back,
             base64: true,
             quality: 1,
-            allowsEditing: false,
+            allowsEditing: true,
             exif: false,
         });
         if (!result.canceled) {
@@ -75,11 +75,13 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 if (key) {
                     jsonString = await translateImage(asset.base64);
                 } else {
+                    const appUserId = await Purchases.getAppUserID();
+
                     const response = await axios.post(
                         // Hard Coding While Testing
                         `http://10.0.0.187:8000/api/ai_translation/image`,
                         // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
-                        { imageBase64: asset.base64 },
+                        { imageBase64: asset.base64, appUserId: appUserId },
                         {});
                     jsonString = response.data.message;
                 }
@@ -156,10 +158,11 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             if (key) {
                 jsonString = await translateWord(textToSend);
             } else {
+                const appUserId = await Purchases.getAppUserID();
                 const response = await axios.post(
                     `http://10.0.0.187:8000/api/ai_translation/single_word`,
                     // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
-                    { wordToTranslate: textToSend },
+                    { wordToTranslate: textToSend, appUserId: appUserId },
                     {});
                 jsonString = response.data.message;
             }
@@ -272,14 +275,14 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                             </View>
                             :
                             <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
-                                <View className="border border-r-purple-600">
-                                    <TextInput onSubmitEditing={() => handleTextSubmit(inputText)} ref={textInputRef} className='border border-purple-600 text-lg text-purple-300 placeholder:text-purple-300/50 rounded m-2' value={inputText} onChangeText={(text) => HandleFormChange(text)} placeholder='言葉こちら' />
-                                    <Pressable onPress={() => handleTextSubmit(inputText)} className="m-2 border p-2 bg-purple-800 border-purple-600 rounded flex-row items-center">
-                                        <Text className=" text-white">Submit Word</Text>
-                                    </Pressable>
-                                </View>
-                                <View className="p-2 flex-1">
-                                    <Text className="text-purple-300">{operationResponse ?? "Awaiting Action"}</Text>
+                                <View className="border border-r-purple-600 w-full flex flex-row">
+                                    <TextInput onSubmitEditing={() => handleTextSubmit(inputText)} ref={textInputRef} className='border text-lg text-purple-300 placeholder:text-purple-300/50 rounded m-2 flex-1' value={inputText} onChangeText={(text) => HandleFormChange(text)} placeholder='言葉こちら' />
+                                    <View className="flex justify-end">
+                                        <Pressable onPress={() => handleTextSubmit(inputText)} className="m-2 border p-2 bg-purple-800 border-purple-600 rounded flex-row items-center">
+                                            <Text className=" text-white">Submit</Text>
+                                        </Pressable>
+                                    </View>
+
                                 </View>
                             </View>
                     }
@@ -313,11 +316,21 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
 
                     {/* Kanji List */}
-                    {kanjiObjectArray.map((kanji: any, index: number) => (
-                        <View key={kanji.kanji}>
-                            <VocabCard vocabWord={kanji} />
-                        </View>
-                    ))}
+                    {
+                        kanjiObjectArray.length > 0 ?
+                            <>
+                                {kanjiObjectArray.map((kanji: any, index: number) => (
+                                    <View key={kanji.kanji}>
+                                        <VocabCard vocabWord={kanji} />
+                                    </View>
+                                ))}
+                            </>
+                            :
+                            <View>
+                                <Text className="mt-3 text-lg font-semibold text-purple-300">Translated Words Will Appear Here...</Text>
+                            </View>
+                    }
+
 
                 </ScrollView>
                 <LinearGradient
