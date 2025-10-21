@@ -7,6 +7,8 @@ import LinearGradient from "react-native-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { loadVocabList } from "~/utils/asyncStorageManager";
 import axios from "axios";
+import Purchases from 'react-native-purchases';
+import { attemptToResoreSubscription, getIsUserSubscribed, promptUserSubscription } from "~/utils/subscriptionMethods";
 
 export default function SettingsScreen() {
 
@@ -19,6 +21,8 @@ export default function SettingsScreen() {
         apiKey: ""
     });
 
+    const [isSubscribed, setIsSubscribed] = useState(true);
+
     const { AnkiModule } = NativeModules;
 
     useFocusEffect(
@@ -28,12 +32,15 @@ export default function SettingsScreen() {
 
                 const deckSetting = await loadDeckSetting();
                 const apiKeySetting = await loadAPIKeySetting();
-
                 setSettingsForm({
                     ...settingForm,
                     insertDeck: deckSetting != null ? deckSetting : "",
                     apiKey: apiKeySetting != null ? apiKeySetting : "",
                 });
+
+                if (!await getIsUserSubscribed()) {
+                    setIsSubscribed(false);
+                }
 
                 setLoading(false);
             })();
@@ -57,19 +64,23 @@ export default function SettingsScreen() {
     }
 
     const debug = async () => {
-        setLoading(true);
         try {
-            const response = await axios.post(
-                `http://10.0.0.187:8000/api/hello`,
-                {wordToTranslate: "騎士団"},
-                {});
-                setDebugResponse(response.data.message);
-                setLoading(false);
+            promptUserSubscription();
+            setLoading(false);
         } catch (error: any) {
             setLoading(false);
             Alert.alert(error?.message ? error.message : "ERROR");
         }
+    }
 
+    const purchaseSubscription = async () => {
+        let userSubscribed = await promptUserSubscription();
+        setIsSubscribed(userSubscribed);
+    }
+
+    const restorePurchase = async () => {
+        let userSubscribed = await attemptToResoreSubscription();
+        setIsSubscribed(userSubscribed);
     }
 
     return (
@@ -96,6 +107,41 @@ export default function SettingsScreen() {
                         <TextInput secureTextEntry={true} className='bg-black border mb-2 shadow-lg shadow-purple-300 border-purple-800 my-1 rounded text-purple-300 placeholder:text-purple-300/50' value={settingForm.apiKey} onChangeText={(text) => handleFormChange('apiKey', text)} placeholder='Personal Api Key' />
                     </View>
 
+
+                    {
+                        !isSubscribed ?
+                            <>
+                                <View className="mx-auto mb-3">
+                                    <Ionicons name="ellipsis-horizontal-outline" size={50} color={"#fff"} />
+                                </View>
+
+                                <View className="mb-6">
+                                    <Pressable onPress={() => purchaseSubscription()} className="border p-3 bg-purple-800 border-purple-600 rounded flex-row items-center">
+                                        <Text className="mx-auto text-white">Purchase Subscription</Text>
+                                    </Pressable>
+                                </View>
+
+                                <View className="mb-3">
+                                    <Pressable onPress={() => restorePurchase()} className="border p-3 bg-purple-800 border-purple-600 rounded flex-row items-center">
+                                        <Text className="mx-auto text-white">Restore Purchase</Text>
+                                    </Pressable>
+                                </View>
+                            </>
+                            :
+                            <>
+                                {
+                                    !loading &&
+                                    <View className="mb-3">
+                                        <Text className="text-purple-400 text-lg">
+                                            You are currently subscribed!
+                                        </Text>
+                                    </View>
+                                }
+                            </>
+                    }
+
+
+
                     {
                         debugResponse &&
                         <Text className="text-white">
@@ -112,7 +158,7 @@ export default function SettingsScreen() {
                     pointerEvents={'none'}
                 />
             </View>
-            <View className="relative bg-transparent">
+            <View className="relative bg-transparent pb-5">
                 <View className="flex-row justify-around items-end py-1 bg-[#050505]">
                     <Pressable className="items-center w-1/3">
                         {/* <Ionicons name="list" size={30} color={"#fff"} />

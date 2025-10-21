@@ -66,6 +66,22 @@ Include the following fields:
 Output only a JSON array string containing objects with these keys.
 `
 
+export const singleWordInstructionText = `You will be provided a japanese word.
+If the word is in English find the Japanese word and then proceede as if that word had been entered.
+Include the following fields:
+- kanji
+- kana
+- furigana (e.g. 暗記[あんき])
+- meaning (English)
+- partOfSpeech
+- exampleSentenceKanji
+- exampleSentenceFurigana
+- exampleSentenceKana
+- exampleSentenceEnglish
+
+Output only a JSON object with these keys.
+`
+
 export const generateInstructionsForWord = (inputText) => {
   return `Create card data for the Japanese word ${inputText}.
 If the word is in English find the Japanese word and then proceede as if that word had been entered.

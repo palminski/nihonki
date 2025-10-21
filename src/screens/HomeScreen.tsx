@@ -12,7 +12,9 @@ import { NavigationProp } from "@react-navigation/native";
 import VocabCard from "~/components/VocabCard";
 import ImageView from "react-native-image-viewing";
 import axios from "axios";
-
+import Purchases from "react-native-purchases";
+import { getIsUserSubscribed, promptUserSubscription } from "~/utils/subscriptionMethods";
+import { translateImage, translateWord } from "~/utils/aiAPICalls";
 
 export default function HomeScreen({ navigation }: { navigation: NavigationProp<any> }) {
 
@@ -36,6 +38,12 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
     async function handleOpenCamera() {
 
+        const key = await loadAPIKeySetting();
+        if (!await getIsUserSubscribed() && (key == null || key == "")) {
+            Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
+            return;
+        }
+
         const cameraRequestId = `Camera_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         setIsPictureMode(true);
@@ -54,11 +62,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             const asset = result.assets[0];
             setImageUri(asset.uri);
 
-            const key = await loadAPIKeySetting();
-            if (key == null || key == "") {
-                // setOperationRespone(`An API key is required`);
-                // return;
-            };
+
 
             setCurrentRequests(prev => ({
                 ...prev,
@@ -66,21 +70,27 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             }));
 
             try {
-                const response = await axios.post(
-                // Hard Coding While Testing
-                `http://10.0.0.187:8000/api/ai_translation/image`,
-                // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
-                {imageBase64: asset.base64, apiKey: key},
-                {});
+
+                let jsonString = "";
+                if (key) {
+                    jsonString = await translateImage(asset.base64);
+                } else {
+                    const response = await axios.post(
+                        // Hard Coding While Testing
+                        `http://10.0.0.187:8000/api/ai_translation/image`,
+                        // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
+                        { imageBase64: asset.base64 },
+                        {});
+                    jsonString = response.data.message;
+                }
 
                 setCurrentRequests(prev => {
                     const { [cameraRequestId]: _, ...rest } = prev
                     return rest
                 });
-                setSnappedImages(prevItems => [{uri: asset.uri}, ...prevItems])
+                setSnappedImages(prevItems => [{ uri: asset.uri }, ...prevItems])
 
-                const jsonString = response.data.message;
-                
+
                 let cardObjectArray = [];
 
                 if (jsonString) {
@@ -103,7 +113,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 });
                 await updateVocabList(vocabList);
 
-                
+
                 setKanjiObjectArray(prev => {
                     const filteredPrev = prev.filter(
                         kanjiObjectArray => !cardObjectArray.some(cardObject => cardObject.kanji === kanjiObjectArray.kanji)
@@ -124,15 +134,14 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
     const handleTextSubmit = async (textToSend: string) => {
         setIsPictureMode(true);
+
         if (textToSend == null || textToSend == "") return;
-        
-        
-        //Handle Provided Key Here Later
+
         const key = await loadAPIKeySetting();
-        if (key == null || key == "") {
-            // setOperationRespone(`An API key is required`);
-            // return;
-        };
+        if (!await getIsUserSubscribed() && (key == null || key == "")) {
+            Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
+            return;
+        }
 
         try {
             setInputText("");
@@ -141,19 +150,26 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 [textToSend]: "text"
             }));
 
-            const response = await axios.post(
-                // Hard Coding While Testing
-                `http://10.0.0.187:8000/api/ai_translation/single_word`,
-                // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
-                {wordToTranslate: textToSend, apiKey: key},
-                {});
+            let jsonString = "";
+
+            // Make request from app or from server depending on if user input a key
+            if (key) {
+                jsonString = await translateWord(textToSend);
+            } else {
+                const response = await axios.post(
+                    `http://10.0.0.187:8000/api/ai_translation/single_word`,
+                    // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
+                    { wordToTranslate: textToSend },
+                    {});
+                jsonString = response.data.message;
+            }
+
 
             setCurrentRequests(prev => {
                 const { [textToSend]: _, ...rest } = prev
                 return rest
             });
 
-            const jsonString = response.data.message;
 
             if (jsonString !== null) {
                 //Validate Response
@@ -187,7 +203,12 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
         setInputText(value);
     }
 
-    const handleEnterText = () => {
+    const handleEnterText = async () => {
+        const key = await loadAPIKeySetting();
+        if (!await getIsUserSubscribed() && (key == null || key == "")) {
+            Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
+            return;
+        }
         setIsPictureMode(false);
 
         setTimeout(() => {
@@ -230,16 +251,16 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                         isPictureMode ?
                             <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
                                 <ScrollView horizontal className="">
-                                    {   
-                                    snappedImages.length > 0 ?
-                                        snappedImages.reverse().map((image, index) => (
-                                            <Pressable key={index} onPress={() => { setImageViewerVisible(true); setImageIndex(index) }}>
-                                                <Image source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />
+                                    {
+                                        snappedImages.length > 0 ?
+                                            snappedImages.reverse().map((image, index) => (
+                                                <Pressable key={index} onPress={() => { setImageViewerVisible(true); setImageIndex(index) }}>
+                                                    <Image source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />
 
-                                            </Pressable>
-                                        ))
-                                        :
-                                        <Text className="text-purple-400/50 text-lg mt-auto  pl-3 pb-2">Scanned Images Will Appear Here...</Text>
+                                                </Pressable>
+                                            ))
+                                            :
+                                            <Text className="text-purple-400/50 text-lg mt-auto  pl-3 pb-2">Scanned Images Will Appear Here...</Text>
                                     }
                                     <ImageView
                                         images={snappedImages}
@@ -306,7 +327,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 />
             </View>
             {/* Bottom Menu */}
-            <View className="relative bg-transparent">
+            <View className="relative bg-transparent pb-5">
                 <View className="flex-row justify-around items-end py-1 bg-[#050505]">
                     <Pressable onPress={() => { navigation.navigate("Vocab List") }} className="items-center w-1/3">
                         <Ionicons name="list" size={30} color={"#fff"} />

@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import VocabListScreen from '~/screens/VocabListScreen';
 import { useEffect } from 'react';
+import Purchases from 'react-native-purchases';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -23,6 +24,16 @@ export default function App() {
         (async () => {
             try {
                 await AnkiModule.checkAndRequestPermissions();
+            } catch (error: any) {
+                console.warn("Failed to check permission on startup");
+            }
+        })();
+    }, [])
+
+    useEffect(() => {
+        (async () => {
+            try {
+                await Purchases.configure({apiKey: 'test_bRWdyoYjCGsIgmsnsBiaHmBJQLR'});
             } catch (error: any) {
                 console.warn("Failed to check permission on startup");
             }
