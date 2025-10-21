@@ -171,7 +171,7 @@ export default function SettingsScreen() {
                     pointerEvents={'none'}
                 />
             </View>
-            <View className="relative bg-transparent pb-5">
+            <View className="relative bg-transparent">
                 <View className="flex-row justify-around items-end py-1 bg-[#050505]">
                     <Pressable className="items-center w-1/3">
                         {/* <Ionicons name="list" size={30} color={"#fff"} />

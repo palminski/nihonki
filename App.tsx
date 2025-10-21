@@ -8,11 +8,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '~/screens/HomeScreen';
 import SettingsScreen from '~/screens/SettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import VocabListScreen from '~/screens/VocabListScreen';
 import { useEffect } from 'react';
 import Purchases from 'react-native-purchases';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -42,9 +42,10 @@ export default function App() {
 
     return (
         <>
-            <StatusBar style='light' backgroundColor='#050505' translucent={false}></StatusBar>
-            <NavigationContainer>
+            <SafeAreaView className='flex-1 bg-black' edges={["bottom", "left", "right"]}>
 
+            
+            <NavigationContainer>
                 <Stack.Navigator
                     screenOptions={({ route, navigation }) => ({
                         headerShown: true,
@@ -90,6 +91,7 @@ export default function App() {
                     />
                 </Stack.Navigator>
             </NavigationContainer>
+            </SafeAreaView>
         </>
     );
 }

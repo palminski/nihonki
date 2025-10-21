@@ -327,7 +327,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                             </>
                             :
                             <View>
-                                <Text className="mt-3 text-lg font-semibold text-purple-300">Translated Words Will Appear Here...</Text>
+                                <Text className="mt-6 text-xl font-semibold text-purple-300/50 mx-auto">Translated Words Will Appear Here</Text>
                             </View>
                     }
 
@@ -340,7 +340,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 />
             </View>
             {/* Bottom Menu */}
-            <View className="relative bg-transparent pb-5">
+            <View className="relative bg-transparent">
                 <View className="flex-row justify-around items-end py-1 bg-[#050505]">
                     <Pressable onPress={() => { navigation.navigate("Vocab List") }} className="items-center w-1/3">
                         <Ionicons name="list" size={30} color={"#fff"} />
