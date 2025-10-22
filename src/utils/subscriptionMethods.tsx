@@ -3,8 +3,7 @@ import { Alert } from "react-native";
 
 export async function promptUserSubscription(): Promise<boolean> {
     if (!__DEV__) {
-        Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-        return true;
+        return false;
     }
     try {
         const offerings = await Purchases.getOfferings();
@@ -45,8 +44,7 @@ export async function promptUserSubscription(): Promise<boolean> {
 
 export async function attemptToResoreSubscription(): Promise<boolean> {
     if (!__DEV__) {
-        Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-        return true;
+        return false;
     }
     try {
         const info = await Purchases.restorePurchases();
@@ -68,8 +66,7 @@ export async function attemptToResoreSubscription(): Promise<boolean> {
 
 export async function getIsUserSubscribed() {
     if (!__DEV__) {
-        Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-        return true;
+        return false;
     }
     const subscriptionInfo = await Purchases.getCustomerInfo();
     if (!subscriptionInfo.entitlements.active["api_key_access"]) {

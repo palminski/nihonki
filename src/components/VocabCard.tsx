@@ -49,8 +49,8 @@ export default function VocabCard({ vocabWord, hasBeenSent = false }: VocabCardP
                 deckToInsertInto ? deckToInsertInto : "Umeboshi"
             );
             setIsAdded(true)
-        } catch (error) {
-            Alert.alert("AnkiDroid Could Not Be Reached", "Please ensure that you have AnkiDroid installed on this device and that you have granted this app permission to insert cards into it.");
+        } catch (error: any) {
+            Alert.alert("AnkiDroid Could Not Be Reached", error?.message);
         }
 
     }

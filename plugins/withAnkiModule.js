@@ -47,15 +47,15 @@ module.exports = function withAnkiModule(config) {
 
                 if(!contents.includes("import com.palminski.nihonki.AnkiPackage")) {
                     contents = contents.replace(
-                        /import com.facebook\.react\.soloader\.OpenSourceMergedSoMapping/,
+                        /import com\.facebook\.react\.defaults\.DefaultReactNativeHost/,
                         (match) => `${match}\nimport com.palminski.nihonki.AnkiPackage`
                     );
                 }
 
                 if(!contents.includes("packages.add(AnkiPackage())")) {
                     contents = contents.replace(
-                        /(val packages = PackageList\(this\)\.packages[\s\S]*?)(return packages)/,
-                        `$1 packages.add(AnkiPackage())\n   $2`
+                        /(PackageList\(this\)\.packages\.apply\s*{)/,
+                        `$1 \n   add(AnkiPackage())`
                     );
                 }
                 fs.writeFileSync(mainAppPath, contents);

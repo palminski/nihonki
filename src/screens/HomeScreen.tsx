@@ -325,7 +325,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
                     {/* Kanji List */}
                     {
-                        kanjiObjectArray.length > 0 ?
+                        (kanjiObjectArray.length > 0 || Object.entries(currentRequests).length > 0 ) ?
                             <>
                                 {kanjiObjectArray.map((kanji: any, index: number) => (
                                     <View key={kanji.kanji}>
