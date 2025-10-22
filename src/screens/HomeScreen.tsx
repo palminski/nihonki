@@ -75,6 +75,10 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 if (key) {
                     jsonString = await translateImage(asset.base64);
                 } else {
+                    if (!__DEV__) {
+                        Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
+                        return;
+                    }
                     const appUserId = await Purchases.getAppUserID();
 
                     const response = await axios.post(
@@ -158,6 +162,10 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             if (key) {
                 jsonString = await translateWord(textToSend);
             } else {
+                if (!__DEV__) {
+                    Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
+                    return;
+                }
                 const appUserId = await Purchases.getAppUserID();
                 const response = await axios.post(
                     `http://10.0.0.187:8000/api/ai_translation/single_word`,

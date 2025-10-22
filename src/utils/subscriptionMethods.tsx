@@ -2,6 +2,10 @@ import Purchases from "react-native-purchases";
 import { Alert } from "react-native";
 
 export async function promptUserSubscription(): Promise<boolean> {
+    if (!__DEV__) {
+        Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
+        return true;
+    }
     try {
         const offerings = await Purchases.getOfferings();
         if (!offerings.current) {
@@ -11,7 +15,7 @@ export async function promptUserSubscription(): Promise<boolean> {
         const packageToBuy = offerings.current.availablePackages[0];
         const purchaseResult = await Purchases.purchasePackage(packageToBuy);
         return true;
-        Alert.alert("Purchased " + purchaseResult.transaction.productIdentifier);
+        // Alert.alert("Purchased " + purchaseResult.transaction.productIdentifier);
 
     } catch (error: any) {
         if (error.userCancelled) {
@@ -40,6 +44,10 @@ export async function promptUserSubscription(): Promise<boolean> {
 }
 
 export async function attemptToResoreSubscription(): Promise<boolean> {
+    if (!__DEV__) {
+        Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
+        return true;
+    }
     try {
         const info = await Purchases.restorePurchases();
 
@@ -59,6 +67,10 @@ export async function attemptToResoreSubscription(): Promise<boolean> {
 }
 
 export async function getIsUserSubscribed() {
+    if (!__DEV__) {
+        Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
+        return true;
+    }
     const subscriptionInfo = await Purchases.getCustomerInfo();
     if (!subscriptionInfo.entitlements.active["api_key_access"]) {
         return false;
