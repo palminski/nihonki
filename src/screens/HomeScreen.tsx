@@ -1,11 +1,9 @@
 import { View, Text, Pressable, Alert, Image, ScrollView, NativeModules, TextInput, ActivityIndicator } from "react-native";
-import { systemInstructionText, imageInstructionText, generateInstructionsForWord } from "~/utils/aiInstructions";
 import * as ImagePicker from "expo-image-picker";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState, useRef } from "react";
-import { loadDeckSetting, loadAPIKeySetting } from "~/utils/settingsManager";
+import { loadAPIKeySetting } from "~/utils/settingsManager";
 import { loadVocabList, updateVocabList } from "~/utils/asyncStorageManager";
-import OpenAI from "openai";
 import { Ionicons } from "@expo/vector-icons";
 import LinearGradient from "react-native-linear-gradient";
 import { NavigationProp } from "@react-navigation/native";
@@ -27,7 +25,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
     const [isPictureMode, setIsPictureMode] = useState<boolean>(true);
 
-    const [operationResponse, setOperationRespone] = useState<any>(null);
     const [kanjiObjectArray, setKanjiObjectArray] = useState<Array<any>>([]);
     const [addedKanjiMap, setAddedKanjiMap] = useState<Record<string, boolean>>({});
 
@@ -103,16 +100,13 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     cardObjectArray = JSON.parse(jsonString);
                 }
                 if (!Array.isArray(cardObjectArray)) {
-                    setOperationRespone(`AI call resulted in response that was not a JSON array ${jsonString}`);
                     return;
                 }
-                setOperationRespone("Complete!");
 
                 let vocabList = await loadVocabList()
                 cardObjectArray.forEach(cardObject => {
                     const { valid, missing } = ValidateCardData(cardObject);
                     if (!valid) {
-                        setOperationRespone(`There was an issue getting card data. Please Try Again. Response:${jsonString}`);
                         return;
                     }
                     vocabList[cardObject.kanji] = cardObject;
@@ -128,7 +122,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 });
 
             } catch (error: any) {
-                // setOperationRespone("ERROR");
                 setCurrentRequests(prev => {
                     const { [cameraRequestId]: _, ...rest } = prev
                     return rest

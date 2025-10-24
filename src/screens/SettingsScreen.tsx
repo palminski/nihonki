@@ -1,4 +1,4 @@
-import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, NativeModules } from "react-native";
+import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, NativeModules, Linking } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { loadDeckSetting, updateDeckSetting, loadAPIKeySetting, updateAPIKeySetting } from "~/utils/settingsManager";
@@ -80,7 +80,7 @@ export default function SettingsScreen() {
     const purchaseSubscription = async () => {
         if (!__DEV__) {
             Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-            
+
         }
         let userSubscribed = await promptUserSubscription();
         setIsSubscribed(userSubscribed);
@@ -89,7 +89,7 @@ export default function SettingsScreen() {
     const restorePurchase = async () => {
         if (!__DEV__) {
             Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-            
+
         }
         let userSubscribed = await attemptToResoreSubscription();
         setIsSubscribed(userSubscribed);
@@ -160,6 +160,10 @@ export default function SettingsScreen() {
                                         <Text className="text-purple-400 text-lg">
                                             You are currently subscribed!
                                         </Text>
+
+                                        <Pressable onPress={() => Linking.openURL("https://play.google.com/store/account/subscriptions")}>
+                                            <Text className="underline text-purple-400 text-lg">Manage Subscriptions Here!</Text>
+                                        </Pressable>
                                     </View>
                                 }
                             </>
