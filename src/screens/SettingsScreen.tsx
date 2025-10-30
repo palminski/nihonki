@@ -78,19 +78,11 @@ export default function SettingsScreen() {
     }
 
     const purchaseSubscription = async () => {
-        if (!__DEV__) {
-            Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-
-        }
         let userSubscribed = await promptUserSubscription();
         setIsSubscribed(userSubscribed);
     }
 
     const restorePurchase = async () => {
-        if (!__DEV__) {
-            Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-
-        }
         let userSubscribed = await attemptToResoreSubscription();
         setIsSubscribed(userSubscribed);
     }

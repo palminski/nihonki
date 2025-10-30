@@ -19,10 +19,12 @@ General Formatting Rules:
 
 Stylistic & Context Rules:
 - Example sentences must sound natural and provide clear contextual meaning for the word.
+  - The exampleSentenceKanji field itself should not contain furigana.
   - Avoid sentences that merely repeat the word in isolation or describe its definition.
   - Avoid quoting manga panels or fragments that lack context.
   - Include clear, neutral, everyday examples suitable for learners (CEFR A2–B2 level).
 - Always ensure <b> tags correctly wrap only the target word, not surrounding punctuation.
+- Always ensure <b> tags contain no whitespace inside of the tag itself (<b> or </b> only).
 - Never include English, romaji, or hiragana inside <b> tags unless it’s the Japanese word itself.
 
 ---

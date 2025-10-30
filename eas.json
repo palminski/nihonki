@@ -11,6 +11,12 @@
     "preview": {
       "distribution": "internal"
     },
+    "previewaab": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
     "production": {
       "autoIncrement": true
     }

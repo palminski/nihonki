@@ -39,7 +39,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.palminski.nihonki"
+      "package": "com.palminski.nihonki",
+      "permissions": [
+        "com.android.vending.BILLING"
+      ]
     },
     "extra": {
       "eas": {

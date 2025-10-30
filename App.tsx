@@ -33,9 +33,7 @@ export default function App() {
     useEffect(() => {
         (async () => {
             try {
-                if (__DEV__) {
-                    await Purchases.configure({ apiKey: 'test_bRWdyoYjCGsIgmsnsBiaHmBJQLR' });
-                }
+                await Purchases.configure({ apiKey: 'goog_YzOjiXxynASmcCsZxbWZrwrQQtQ' });
             } catch (error: any) {
                 console.warn("Failed to check permission on startup");
             }

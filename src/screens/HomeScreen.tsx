@@ -80,8 +80,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
                     const response = await axios.post(
                         // Hard Coding While Testing
-                        `http://10.0.0.187:8000/api/ai_translation/image`,
-                        // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
+                        // `http://10.0.0.187:8000/api/ai_translation/image`,
+                        `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
                         { imageBase64: asset.base64, appUserId: appUserId },
                         {});
                     jsonString = response.data.message;
@@ -161,8 +161,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 }
                 const appUserId = await Purchases.getAppUserID();
                 const response = await axios.post(
-                    `http://10.0.0.187:8000/api/ai_translation/single_word`,
-                    // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
+                    // `http://10.0.0.187:8000/api/ai_translation/single_word`,
+                    `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
                     { wordToTranslate: textToSend, appUserId: appUserId },
                     {});
                 jsonString = response.data.message;
