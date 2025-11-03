@@ -1,5 +1,6 @@
 import Purchases from "react-native-purchases";
 import { Alert } from "react-native";
+import axios from "axios";
 
 export async function promptUserSubscription(): Promise<boolean> {
     try {
@@ -64,4 +65,16 @@ export async function getIsUserSubscribed() {
         return false;
     }
     return true;
+}
+
+export async function getDeviceInfo(appUserId: string) {
+    const response = await axios.post(
+        // Hard Coding While Testing
+        `http://10.0.0.187:8000/api/devices/info`,
+        // `https://nihonki-server-udaaiuh2.on-forge.com/devices/get`,
+        { appUserId: appUserId },
+        {});
+    let data = response.data;
+    // let data = JSON.parse(jsonString);
+    return data;
 }

@@ -92,7 +92,7 @@ public class AnkiModule extends ReactContextBaseJavaModule {
                     modelId,
                     deckId,
                     new String[] {
-                            kanji, // 1. Index
+                            kanji + "_" + kana, // 1. Index
                             kanji, // 2. Vocab Kanji
                             furigana, // 3. Vocab Kanji With Furigana
                             kana, // 4. Vocab Kana

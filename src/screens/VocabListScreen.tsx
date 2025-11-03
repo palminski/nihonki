@@ -20,10 +20,12 @@ export default function VocabListScreen() {
 
     const [vocabList, setvocabList] = useState<Record<string, any>>({});
     const [addedKanjiMap, setAddedKanjiMap] = useState<Record<string, boolean>>({});
+    const [loading, setLoading] = useState(true);
 
     useFocusEffect(
         useCallback(() => {
             (async () => {
+                setLoading(true);
                 const fetchedVocabList = await loadVocabList();
                 setvocabList(fetchedVocabList);
 
@@ -38,6 +40,7 @@ export default function VocabListScreen() {
                     }
                 }
                 setAddedKanjiMap(mapToMerge);
+                setLoading(false);
             })();
         }, [])
     )
@@ -52,24 +55,31 @@ export default function VocabListScreen() {
                     showsVerticalScrollIndicator={false}
                     className="p-4"
                 >
-
-                    {/* Kanji List */}
-                    {Object.entries(vocabList).toReversed().map(([keyName, kanji], keyIndex) => {
-
-                        if (!kanji || !kanji.kanji) return null;
-                        return (
-                            <View key={keyName}>
-                            <VocabCard vocabWord={kanji} hasBeenSent={addedKanjiMap[kanji.kanji]} />
-
+                    {
+                        loading ?
+                            <View>
+                                <Text className="mt-6 text-xl font-semibold text-purple-300/50 mx-auto">Loading</Text>
                             </View>
-                        )
-                    })}
-                    
+                            :
+                            <>
+                                {/* Kanji List */}
+                                {Object.entries(vocabList).toReversed().map(([keyName, kanji], keyIndex) => {
+
+                                    if (!kanji || !kanji.kanji) return null;
+                                    return (
+                                        <View key={keyName}>
+                                            <VocabCard vocabWord={kanji} hasBeenSent={addedKanjiMap[kanji.kanji + "_" + kanji.kana]} />
+                                        </View>
+                                    )
+                                })}
+                            </>
+                    }
+
                 </ScrollView>
-                
+
                 <LinearGradient
                     style={{ position: 'absolute', bottom: 0, width: "100%", height: 50 }}
-                    colors={['#52525200', '#050505']}
+                    colors={['#52525200', '#000000']}
                     pointerEvents={'none'}
                 />
             </View>

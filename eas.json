@@ -13,6 +13,7 @@
     },
     "previewaab": {
       "distribution": "internal",
+      "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
       }

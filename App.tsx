@@ -8,17 +8,38 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '~/screens/HomeScreen';
 import SettingsScreen from '~/screens/SettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
-
+import { getIsUserSubscribed, getDeviceInfo } from '~/utils/subscriptionMethods';
 import VocabListScreen from '~/screens/VocabListScreen';
-import { useEffect } from 'react';
+import { useEffect, createContext, useState } from 'react';
 import Purchases from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+
+interface UserData {
+    appUserId: string,
+    isSubscribed: boolean,
+    imagesRemaining: number,
+    wordsRemaining: number,
+}
+
+interface AppContextType {
+    userData: UserData,
+    setUserData: React.Dispatch<React.SetStateAction<UserData>>;
+}
+
+export const AppContext = createContext<AppContextType | null>(null);
+
 export default function App() {
 
     const { AnkiModule } = NativeModules;
+    const [userData, setUserData] = useState<UserData>({
+        appUserId: "",
+        isSubscribed: false,
+        imagesRemaining: 0,
+        wordsRemaining: 0,
+    })
 
     useEffect(() => {
         (async () => {
@@ -40,8 +61,31 @@ export default function App() {
         })();
     }, [])
 
+    useEffect(() => {
+            const setUpUserData = async () => {
+                const appUserId = await Purchases.getAppUserID();
+                let isSubscribed = true;
+                if (!await getIsUserSubscribed()) {
+                    isSubscribed = false;
+                }
+                
+                const deviceData = await getDeviceInfo(appUserId);
+    
+                const imagesRemaining = deviceData.images_remaining;
+                const wordsRemaining = deviceData.words_remaining;
+
+                setUserData({
+                    appUserId,
+                    isSubscribed,
+                    imagesRemaining,
+                    wordsRemaining
+                })
+            }
+            setUpUserData();
+        }, []);
+
     return (
-        <>
+        <AppContext.Provider value={{userData, setUserData}}>
             <SafeAreaView className='flex-1 bg-black' edges={["bottom", "left", "right"]}>
 
 
@@ -92,6 +136,6 @@ export default function App() {
                     </Stack.Navigator>
                 </NavigationContainer>
             </SafeAreaView>
-        </>
+        </AppContext.Provider>
     );
 }

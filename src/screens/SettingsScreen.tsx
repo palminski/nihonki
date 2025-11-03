@@ -1,5 +1,5 @@
 import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, NativeModules, Linking } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useContext } from "react";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { loadDeckSetting, updateDeckSetting, loadAPIKeySetting, updateAPIKeySetting } from "~/utils/settingsManager";
 import { useFocusEffect } from "@react-navigation/native";
@@ -9,8 +9,12 @@ import { loadVocabList } from "~/utils/asyncStorageManager";
 import axios from "axios";
 import Purchases from 'react-native-purchases';
 import { attemptToResoreSubscription, getIsUserSubscribed, promptUserSubscription } from "~/utils/subscriptionMethods";
+import { AppContext } from "App";
 
 export default function SettingsScreen() {
+    const appContext = useContext(AppContext);
+    if (!appContext) return null;
+    const { userData, setUserData } = appContext;
 
     const [loading, setLoading] = useState(false);
 
@@ -21,9 +25,6 @@ export default function SettingsScreen() {
         apiKey: ""
     });
 
-    const [isSubscribed, setIsSubscribed] = useState(true);
-
-    const { AnkiModule } = NativeModules;
 
     useFocusEffect(
         useCallback(() => {
@@ -38,9 +39,6 @@ export default function SettingsScreen() {
                     apiKey: apiKeySetting != null ? apiKeySetting : "",
                 });
 
-                if (!await getIsUserSubscribed()) {
-                    setIsSubscribed(false);
-                }
 
                 setLoading(false);
             })();
@@ -79,12 +77,13 @@ export default function SettingsScreen() {
 
     const purchaseSubscription = async () => {
         let userSubscribed = await promptUserSubscription();
-        setIsSubscribed(userSubscribed);
+        setUserData({ ...userData, isSubscribed: userSubscribed });
     }
 
     const restorePurchase = async () => {
         let userSubscribed = await attemptToResoreSubscription();
-        setIsSubscribed(userSubscribed);
+        setUserData({ ...userData, isSubscribed: userSubscribed });
+
     }
 
     return (
@@ -126,7 +125,7 @@ export default function SettingsScreen() {
 
 
                     {
-                        !isSubscribed ?
+                        !userData.isSubscribed ?
                             <>
                                 <View className="mx-auto mb-3">
                                     <Ionicons name="ellipsis-horizontal-outline" size={50} color={"#fff"} />
@@ -175,12 +174,12 @@ export default function SettingsScreen() {
                 </ScrollView>
                 <LinearGradient
                     style={{ position: 'absolute', bottom: 0, width: "100%", height: 50 }}
-                    colors={['#52525200', '#050505']}
+                    colors={['#52525200', '#000000']}
                     pointerEvents={'none'}
                 />
             </View>
             <View className="relative bg-transparent">
-                <View className="flex-row justify-around items-end py-1 bg-[#050505]">
+                <View className="flex-row justify-around items-end py-1 bg-[#000000]">
                     <Pressable className="items-center w-1/3">
                         {/* <Ionicons name="list" size={30} color={"#fff"} />
                         <Text className="text-white text-xs mt-1">Vocab List</Text> */}

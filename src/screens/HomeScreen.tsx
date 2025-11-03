@@ -1,42 +1,59 @@
 import { View, Text, Pressable, Alert, Image, ScrollView, NativeModules, TextInput, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import ScreenWrapper from "~/components/ScreenWrapper";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useContext, useCallback } from "react";
 import { loadAPIKeySetting } from "~/utils/settingsManager";
 import { loadVocabList, updateVocabList } from "~/utils/asyncStorageManager";
 import { Ionicons } from "@expo/vector-icons";
 import LinearGradient from "react-native-linear-gradient";
-import { NavigationProp } from "@react-navigation/native";
+import { NavigationProp, useFocusEffect } from "@react-navigation/native";
 import VocabCard from "~/components/VocabCard";
 import ImageView from "react-native-image-viewing";
 import axios from "axios";
 import Purchases from "react-native-purchases";
-import { getIsUserSubscribed, promptUserSubscription } from "~/utils/subscriptionMethods";
+import { getIsUserSubscribed, promptUserSubscription, getDeviceInfo } from "~/utils/subscriptionMethods";
 import { translateImage, translateWord } from "~/utils/aiAPICalls";
+import { AppContext } from "App";
 
 export default function HomeScreen({ navigation }: { navigation: NavigationProp<any> }) {
-
-    const { AnkiModule } = NativeModules;
-
     const [currentRequests, setCurrentRequests] = useState<Record<string, string>>({});
 
-    const [imageUri, setImageUri] = useState<string | null>(null);
     const [inputText, setInputText] = useState<string>("");
 
     const [isPictureMode, setIsPictureMode] = useState<boolean>(true);
 
     const [kanjiObjectArray, setKanjiObjectArray] = useState<Array<any>>([]);
-    const [addedKanjiMap, setAddedKanjiMap] = useState<Record<string, boolean>>({});
 
     const [snappedImages, setSnappedImages] = useState<any[]>([]);
     const [imageViewerVisible, setImageViewerVisible] = useState(false);
     const [imageIndex, setImageIndex] = useState(0);
+    const [hasKey, setHasKey] = useState(false);
+
+    const appContext = useContext(AppContext);
+    if (!appContext) return null;
+    const { userData, setUserData } = appContext;
+
+    useFocusEffect(
+        useCallback(() => {
+            (async () => {
+                const key = await loadAPIKeySetting();
+                if (!(key == null || key == "")) {
+                    setHasKey(true);
+                }
+                else{
+                    setHasKey(false);
+                }
+            })();
+        }, [])
+    )
+
+
     const textInputRef = useRef<TextInput>(null);
 
     async function handleOpenCamera() {
 
         const key = await loadAPIKeySetting();
-        if (!await getIsUserSubscribed() && (key == null || key == "")) {
+        if (userData.imagesRemaining <= 0 && !await getIsUserSubscribed() && (key == null || key == "")) {
             Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
             return;
         }
@@ -57,9 +74,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
         });
         if (!result.canceled) {
             const asset = result.assets[0];
-            setImageUri(asset.uri);
-
-
 
             setCurrentRequests(prev => ({
                 ...prev,
@@ -72,19 +86,26 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 if (key) {
                     jsonString = await translateImage(asset.base64);
                 } else {
-                    if (!__DEV__) {
-                        Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-                        return;
+                    try {
+                        const appUserId = userData.appUserId;
+                        setUserData(prev => ({
+                            ...prev,
+                            imagesRemaining: Math.max(0, prev.imagesRemaining - 1),
+                        }));
+                        const response = await axios.post(
+                            // Hard Coding While Testing
+                            `http://10.0.0.187:8000/api/ai_translation/image`,
+                            // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
+                            { imageBase64: asset.base64, appUserId: appUserId },
+                            {});
+                        jsonString = response.data.message;
+                    } catch (error: any) {
+                        setUserData(prev => ({
+                            ...prev,
+                            imagesRemaining: prev.imagesRemaining + 1,
+                        }));
+                        throw error;
                     }
-                    const appUserId = await Purchases.getAppUserID();
-
-                    const response = await axios.post(
-                        // Hard Coding While Testing
-                        // `http://10.0.0.187:8000/api/ai_translation/image`,
-                        `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
-                        { imageBase64: asset.base64, appUserId: appUserId },
-                        {});
-                    jsonString = response.data.message;
                 }
 
                 setCurrentRequests(prev => {
@@ -109,7 +130,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     if (!valid) {
                         return;
                     }
-                    vocabList[cardObject.kanji] = cardObject;
+                    vocabList[cardObject.kanji+"_"+cardObject.kana] = cardObject;
                 });
                 await updateVocabList(vocabList);
 
@@ -137,7 +158,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
         if (textToSend == null || textToSend == "") return;
 
         const key = await loadAPIKeySetting();
-        if (!await getIsUserSubscribed() && (key == null || key == "")) {
+        if (userData.wordsRemaining <= 0 && !await getIsUserSubscribed() && (key == null || key == "")) {
             Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
             return;
         }
@@ -155,17 +176,25 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             if (key) {
                 jsonString = await translateWord(textToSend);
             } else {
-                if (!__DEV__) {
-                    Alert.alert("Can't access purchases yet.", "Purchases are currently only set up on development build. Please use API key");
-                    return;
+                try {
+                    const appUserId = userData.appUserId;
+                    setUserData(prev => ({
+                        ...prev,
+                        wordsRemaining: Math.max(0, prev.wordsRemaining - 1),
+                    }));
+                    const response = await axios.post(
+                        `http://10.0.0.187:8000/api/ai_translation/single_word`,
+                        // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
+                        { wordToTranslate: textToSend, appUserId: appUserId },
+                        {});
+                    jsonString = response.data.message;
+                } catch (error: any) {
+                    setUserData(prev => ({
+                        ...prev,
+                        wordsRemaining: prev.wordsRemaining + 1,
+                    }));
+                    throw error;
                 }
-                const appUserId = await Purchases.getAppUserID();
-                const response = await axios.post(
-                    // `http://10.0.0.187:8000/api/ai_translation/single_word`,
-                    `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
-                    { wordToTranslate: textToSend, appUserId: appUserId },
-                    {});
-                jsonString = response.data.message;
             }
 
 
@@ -190,7 +219,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 })
                 // Update App Vocab List
                 let vocabList = await loadVocabList()
-                vocabList[cardObject.kanji] = cardObject;
+                vocabList[cardObject.kanji+"_"+cardObject.kana] = cardObject;
                 updateVocabList(vocabList);
             }
 
@@ -209,15 +238,16 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
     const handleEnterText = async () => {
         const key = await loadAPIKeySetting();
-        if (!await getIsUserSubscribed() && (key == null || key == "")) {
+        if (userData.wordsRemaining <= 0 && !await getIsUserSubscribed() && (key == null || key == "")) {
             Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
             return;
         }
         setIsPictureMode(false);
 
         setTimeout(() => {
+            textInputRef.current?.blur();
             textInputRef.current?.focus();
-        }, 1)
+        }, 10)
     }
 
     function ValidateCardData(data: any): { valid: boolean; missing: string[] } {
@@ -318,7 +348,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
                     {/* Kanji List */}
                     {
-                        (kanjiObjectArray.length > 0 || Object.entries(currentRequests).length > 0 ) ?
+                        (kanjiObjectArray.length > 0 || Object.entries(currentRequests).length > 0) ?
                             <>
                                 {kanjiObjectArray.map((kanji: any, index: number) => (
                                     <View key={kanji.kanji}>
@@ -336,25 +366,40 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 </ScrollView>
                 <LinearGradient
                     style={{ position: 'absolute', bottom: 0, width: "100%", height: 50 }}
-                    colors={['#52525200', '#050505']}
+                    colors={['#52525200', '#000000']}
                     pointerEvents={'none'}
                 />
             </View>
             {/* Bottom Menu */}
             <View className="relative bg-transparent">
-                <View className="flex-row justify-around items-end py-1 bg-[#050505]">
+                <View className="flex-row justify-around items-end py-1 bg-[#000000]">
                     <Pressable onPress={() => { navigation.navigate("Vocab List") }} className="items-center w-1/3">
                         <Ionicons name="list" size={30} color={"#fff"} />
                         <Text className="text-white text-xs mt-1">Vocab List</Text>
                     </Pressable>
-                    <Pressable onPress={handleOpenCamera} className="items-center w-1/3">
-                        <Ionicons name="camera" size={50} color={"#fff"} />
+                    <View className="items-center w-1/3 relative">
+                        <Pressable onPress={handleOpenCamera} className="">
+                            <Ionicons name="camera" size={50} color={"#fff"} />
+                            {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
+                                <View className="absolute -top-1 -right-3 bg-purple-400 rounded-full w-7 h-7 items-center justify-center shadow">
+                                    <Text className="font-bold">{userData.imagesRemaining}</Text>
+                                </View>
+                            }
+
+                        </Pressable>
                         <Text className="text-white text-xs mt-1">Scan Text</Text>
-                    </Pressable>
-                    <Pressable onPress={handleEnterText} className="items-center w-1/3">
-                        <Ionicons name="create-outline" size={30} color={"#fff"} />
+                    </View>
+                    <View className="items-center w-1/3 relative">
+                        <Pressable onPress={handleEnterText}>
+                            <Ionicons name="create-outline" size={30} color={"#fff"} />
+                            {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
+                                <View className="absolute -top-1 -right-2 bg-purple-400 rounded-full w-5 h-5 items-center justify-center shadow">
+                                    <Text className="font-bold text-sm">{userData.wordsRemaining}</Text>
+                                </View>
+                            }
+                        </Pressable>
                         <Text className="text-white text-xs mt-1">Enter Word</Text>
-                    </Pressable>
+                    </View>
                 </View>
             </View>
 
