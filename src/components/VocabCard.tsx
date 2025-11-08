@@ -1,4 +1,4 @@
-import { View, Text, Pressable, NativeModules } from "react-native";
+import { View, Text, Pressable, NativeModules, Alert } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { ReactNode, useState } from "react";
 import { StyleSheet } from "react-native";
@@ -35,19 +35,24 @@ export default function VocabCard({ vocabWord, hasBeenSent = false }: VocabCardP
 
     async function handleSendToAnki(cardObject: VocabWord) {
         const deckToInsertInto = await loadDeckSetting();
-        const result = await AnkiModule.addNote(
-            cardObject.kanji,
-            cardObject.kana,
-            cardObject.furigana,
-            cardObject.meaning,
-            cardObject.partOfSpeech,
-            cardObject.exampleSentenceKanji,
-            cardObject.exampleSentenceFurigana,
-            cardObject.exampleSentenceKana,
-            cardObject.exampleSentenceEnglish,
-            deckToInsertInto ? deckToInsertInto : "Nihonki"
-        );
-        setIsAdded(true)
+        try {
+            const result = await AnkiModule.addNote(
+                cardObject.kanji,
+                cardObject.kana,
+                cardObject.furigana,
+                cardObject.meaning,
+                cardObject.partOfSpeech,
+                cardObject.exampleSentenceKanji,
+                cardObject.exampleSentenceFurigana,
+                cardObject.exampleSentenceKana,
+                cardObject.exampleSentenceEnglish,
+                deckToInsertInto ? deckToInsertInto : "Umeboshi"
+            );
+            setIsAdded(true)
+        } catch (error: any) {
+            Alert.alert("AnkiDroid Could Not Be Reached", error?.message);
+        }
+
     }
 
     useEffect(() => {
