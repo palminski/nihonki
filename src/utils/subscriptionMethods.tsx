@@ -70,8 +70,8 @@ export async function getIsUserSubscribed() {
 export async function getDeviceInfo(appUserId: string) {
     const response = await axios.post(
         // Hard Coding While Testing
-        `http://10.0.0.187:8000/api/devices/info`,
-        // `https://nihonki-server-udaaiuh2.on-forge.com/devices/get`,
+        // `http://10.0.0.187:8000/api/devices/info`,
+        `https://nihonki-server-udaaiuh2.on-forge.com/api/devices/info`,
         { appUserId: appUserId },
         {});
     let data = response.data;

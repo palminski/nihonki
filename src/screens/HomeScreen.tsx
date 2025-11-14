@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Alert, Image, ScrollView, NativeModules, TextInput, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Alert, Image, ScrollView, NativeModules, TextInput, ActivityIndicator, ImageBackground } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState, useRef, useEffect, useContext, useCallback } from "react";
@@ -14,6 +14,7 @@ import Purchases from "react-native-purchases";
 import { getIsUserSubscribed, promptUserSubscription, getDeviceInfo } from "~/utils/subscriptionMethods";
 import { translateImage, translateWord } from "~/utils/aiAPICalls";
 import { AppContext } from "App";
+import UmeboshiChan from "../assets/UmeboshiChan.svg";
 
 export default function HomeScreen({ navigation }: { navigation: NavigationProp<any> }) {
     const [currentRequests, setCurrentRequests] = useState<Record<string, string>>({});
@@ -40,7 +41,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 if (!(key == null || key == "")) {
                     setHasKey(true);
                 }
-                else{
+                else {
                     setHasKey(false);
                 }
             })();
@@ -94,8 +95,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                         }));
                         const response = await axios.post(
                             // Hard Coding While Testing
-                            `http://10.0.0.187:8000/api/ai_translation/image`,
-                            // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
+                            // `http://10.0.0.187:8000/api/ai_translation/image`,
+                            `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
                             { imageBase64: asset.base64, appUserId: appUserId },
                             {});
                         jsonString = response.data.message;
@@ -130,7 +131,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     if (!valid) {
                         return;
                     }
-                    vocabList[cardObject.kanji+"_"+cardObject.kana] = cardObject;
+                    vocabList[cardObject.kanji + "_" + cardObject.kana] = cardObject;
                 });
                 await updateVocabList(vocabList);
 
@@ -183,8 +184,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                         wordsRemaining: Math.max(0, prev.wordsRemaining - 1),
                     }));
                     const response = await axios.post(
-                        `http://10.0.0.187:8000/api/ai_translation/single_word`,
-                        // `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
+                        // `http://10.0.0.187:8000/api/ai_translation/single_word`,
+                        `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
                         { wordToTranslate: textToSend, appUserId: appUserId },
                         {});
                     jsonString = response.data.message;
@@ -219,7 +220,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 })
                 // Update App Vocab List
                 let vocabList = await loadVocabList()
-                vocabList[cardObject.kanji+"_"+cardObject.kana] = cardObject;
+                vocabList[cardObject.kanji + "_" + cardObject.kana] = cardObject;
                 updateVocabList(vocabList);
             }
 
@@ -244,10 +245,11 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
         }
         setIsPictureMode(false);
 
+
+        textInputRef.current?.blur();
         setTimeout(() => {
-            textInputRef.current?.blur();
             textInputRef.current?.focus();
-        }, 10)
+        }, 150);
     }
 
     function ValidateCardData(data: any): { valid: boolean; missing: string[] } {
@@ -274,7 +276,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             <View className="flex-1 ">
 
                 <ScrollView
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, zIndex: 15 }}
                     contentContainerStyle={{ paddingBottom: 20 }}
                     showsVerticalScrollIndicator={false}
                     className="p-4"
@@ -287,7 +289,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                                 <ScrollView horizontal className="">
                                     {
                                         snappedImages.length > 0 ?
-                                            snappedImages.reverse().map((image, index) => (
+                                            snappedImages.map((image, index) => (
                                                 <Pressable key={index} onPress={() => { setImageViewerVisible(true); setImageIndex(index) }}>
                                                     <Image source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />
 
@@ -313,7 +315,6 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                                             <Text className=" text-white">Submit</Text>
                                         </Pressable>
                                     </View>
-
                                 </View>
                             </View>
                     }
@@ -362,13 +363,31 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                             </View>
                     }
 
+                    {/* Comment In To See Test Vocab Card */}
+                    {/* <View className="my-2 shadow-lg shadow-purple-800 border border-purple-500 p-3 bg-purple-950  rounded">
+                        <View className="flex flex-row justify-between items-end ">
+                            <Pressable className="flex-1 mr-2">
+                                <Text className="text-purple-300 mb-1">
+                                    <Text className="text-2xl text-purple-200">TEST CARD</Text> - <Text className="text text-purple-200">[ TEST CARD ]</Text>
+                                </Text>
+                                <Text className=" text-purple-300 text-sm">
+                                    TEST CARD
+                                </Text>
+                            </Pressable>
+                        </View>
+                    </View> */}
+
 
                 </ScrollView>
+                {/* <Image source={require("../assets/UmeboshiChan2.png")} style={{ width: 200, height: 200, opacity: 0.5, position: "absolute", bottom: 0, zIndex:10 }} /> */}
+                <UmeboshiChan width={200} height={200} style={{position: "absolute", bottom: 0, left:15, zIndex:10}}></UmeboshiChan>
+
                 <LinearGradient
-                    style={{ position: 'absolute', bottom: 0, width: "100%", height: 50 }}
+                    style={{ position: 'absolute', bottom: 0, width: "100%", height: 50, zIndex: 20 }}
                     colors={['#52525200', '#000000']}
                     pointerEvents={'none'}
                 />
+
             </View>
             {/* Bottom Menu */}
             <View className="relative bg-transparent">

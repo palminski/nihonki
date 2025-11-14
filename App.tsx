@@ -62,15 +62,16 @@ export default function App() {
     }, [])
 
     useEffect(() => {
-            const setUpUserData = async () => {
+        const setUpUserData = async () => {
+            try {
                 const appUserId = await Purchases.getAppUserID();
                 let isSubscribed = true;
                 if (!await getIsUserSubscribed()) {
                     isSubscribed = false;
                 }
-                
+
                 const deviceData = await getDeviceInfo(appUserId);
-    
+
                 const imagesRemaining = deviceData.images_remaining;
                 const wordsRemaining = deviceData.words_remaining;
 
@@ -80,12 +81,16 @@ export default function App() {
                     imagesRemaining,
                     wordsRemaining
                 })
+            } catch (error: any) {
+                Alert.alert(error?.message ? error.message : "ERROR");
             }
-            setUpUserData();
-        }, []);
+
+        }
+        setUpUserData();
+    }, []);
 
     return (
-        <AppContext.Provider value={{userData, setUserData}}>
+        <AppContext.Provider value={{ userData, setUserData }}>
             <SafeAreaView className='flex-1 bg-black' edges={["bottom", "left", "right"]}>
 
 
