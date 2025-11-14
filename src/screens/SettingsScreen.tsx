@@ -188,9 +188,9 @@ export default function SettingsScreen() {
                         <Ionicons name="save-outline" size={50} color={"#fff"} />
                         <Text className="text-white text-xs mt-1">Save Settings</Text>
                     </Pressable>
-                    <Pressable onPress={debug} className="items-center w-1/3">
-                        <Ionicons name="bug-outline" size={30} color={"#fff"} />
-                        <Text className="text-white text-xs mt-1">Debug</Text>
+                    <Pressable className="items-center w-1/3">
+                        {/* <Ionicons name="bug-outline" size={30} color={"#fff"} />
+                        <Text className="text-white text-xs mt-1">Debug</Text> */}
                     </Pressable>
                 </View>
             </View>
