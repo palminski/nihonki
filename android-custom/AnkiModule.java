@@ -59,7 +59,7 @@ public class AnkiModule extends ReactContextBaseJavaModule {
         try {
             String pkg = AddContentApi.getAnkiDroidPackageName(reactContext);
             if (pkg == null) {
-                promise.reject("ANKI_UNAVAILABLE", "ANKIDROID API is not available");
+                promise.reject("ANKI_UNAVAILABLE", "ANKIDROID API is not available. Please make sure API access is allowed by AnkiDroid App");
                 return;
             }
 

@@ -2,6 +2,7 @@ const {
     withDangerousMod,
     withMainApplication,
     withAppBuildGradle,
+    withAndroidManifest,
 } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
@@ -96,5 +97,24 @@ module.exports = function withAnkiModule(config) {
         }
         return modConfig;
     });
+
+    config = withAndroidManifest(config, (modConfig) => {
+        const manifest = modConfig.modResults.manifest;
+
+        // Ensure exactly one <queries>
+        manifest.queries = manifest.queries || [{}];
+        if (manifest.queries.length == 0) manifest.queries = [{}];
+
+        const query = manifest.queries[0];
+        query.package = query.package || [];
+        query.intent = query.intent || [];
+
+        const hasPkg = query.package.some(p => p?.$?.["android:name"] === "com.ichi2.anki");
+        if(!hasPkg) {
+            query.package.push({ $: {"android:name": "com.ichi2.anki"}});
+        }
+        return modConfig;
+
+    })
     return config;
 }
