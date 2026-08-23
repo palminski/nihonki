@@ -32,7 +32,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.palminski.nihonki"
     },
     "android": {
       "adaptiveIcon": {

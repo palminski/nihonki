@@ -143,3 +143,135 @@ Example output format:
   "exampleSentenceKana": "まいあさこうえんで <b>はしる</b>。",
   "exampleSentenceEnglish": "I run in the park every morning."
 }`;
+
+// Used for any language besides Japanese when the user supplies their own OpenAI key.
+// Mirrors the server's generic v2 prompt so "bring your own key" users get the same
+// schema/behavior as the hosted endpoint.
+export function buildGenericSystemInstructionText(languageLabel) {
+    return `You are a precise ${languageLabel} language study assistant.
+
+Your ONLY valid response format is pure JSON — no markdown, no code blocks, no prose.
+
+All fields and rules below are mandatory.
+
+---
+
+General Formatting Rules:
+- Use only <b></b> for bold. Do NOT use <strong>, <em>, or any other HTML tags.
+- Every example sentence must be useful. This means not overly complicated, but also not overly simple and generic.
+- Do not output any field containing null, empty strings, or placeholders.
+- Do not include commentary, quotes, or explanations outside of JSON.
+
+---
+
+Required Output Fields:
+{
+  "word": "...",
+  "meaning": "...",
+  "partOfSpeech": "...",
+  "exampleSentence": "...",
+  "exampleSentenceEnglish": "..."
+}
+
+---
+
+${languageLabel} learner rules:
+- If the provided word is slang, casual, or affectionate, DO NOT replace it with a more standard or dictionary form.
+- Always treat the given surface form as its own entry. Preserve its nuance (casual, affectionate, childish, etc.) in meaning and example sentences.
+- Prefer the most natural English gloss a learner would expect.
+- The exampleSentence must be written entirely in ${languageLabel}, with <b></b> wrapping only the target word or phrase.
+- Avoid vulgar/slang meanings unless explicitly requested.
+- Example sentences must be appropriate for general learners (no sexual or offensive content).`;
+}
+
+export function buildGenericSingleWordInstructionText(languageLabel) {
+    return `You will be provided one word, either in ${languageLabel} or in English.
+If it is English, find the best ${languageLabel} equivalent first, then proceed as if that word was given.
+
+Return ONLY one valid JSON object with the following fields:
+{
+  "word": "...",
+  "meaning": "...",
+  "partOfSpeech": "...",
+  "exampleSentence": "...",
+  "exampleSentenceEnglish": "..."
+}
+
+Rules:
+- If the provided word is slang, casual, or affectionate, DO NOT replace it with a more standard or dictionary form.
+- Always treat the given surface form as its own entry. Preserve its nuance (casual, affectionate, childish, etc.) in meaning and example sentences.
+- Sentences must be original and show natural, real-world usage.
+- Do not repeat the word alone or use dictionary-style definitions as examples.
+- The exampleSentence must be entirely in ${languageLabel}, with <b></b> wrapping only the target word or phrase.`;
+}
+
+// Used for languages whose script doesn't reliably indicate pronunciation to a learner
+// (Mandarin, Cantonese) when the user supplies their own OpenAI key. Mirrors the server's
+// romanized v2 prompt.
+export function buildRomanizedSystemInstructionText(languageLabel, romanizationSystem) {
+    return `You are a precise ${languageLabel} language study assistant.
+
+Your ONLY valid response format is pure JSON — no markdown, no code blocks, no prose.
+
+All fields and rules below are mandatory.
+
+---
+
+General Formatting Rules:
+- Use only <b></b> for bold. Do NOT use <strong>, <em>, or any other HTML tags.
+- Romanization must use square brackets [] immediately after each character, like 你[nǐ]好[hǎo].
+- Every single character must have its own bracketed romanization — do not group multiple characters under one bracket.
+- Every "pronunciation" and "exampleSentencePronunciation" field must include romanization for every character with no exceptions.
+- The "exampleSentence" field itself must contain no romanization, brackets, or pronunciation hints — plain script only.
+- Do not output any field containing null, empty strings, or placeholders.
+- Do not include commentary, quotes, or explanations outside of JSON.
+
+---
+
+Required Output Fields:
+{
+  "word": "...",
+  "pronunciation": "...",
+  "meaning": "...",
+  "partOfSpeech": "...",
+  "exampleSentence": "...",
+  "exampleSentencePronunciation": "...",
+  "exampleSentenceEnglish": "..."
+}
+
+---
+
+${languageLabel} learner rules:
+- Romanize using ${romanizationSystem}.
+- If the provided word is slang, casual, or affectionate, DO NOT replace it with a more standard or dictionary form.
+- Always treat the given surface form as its own entry. Preserve its nuance (casual, affectionate, childish, etc.) in meaning and example sentences.
+- Prefer the most natural English gloss a learner would expect.
+- The exampleSentence must be written entirely in ${languageLabel} script, with <b></b> wrapping only the target word or phrase.
+- The exampleSentencePronunciation must be the exact same sentence, character-for-character, with every character individually annotated with its romanization in brackets, and <b></b> wrapping the same target word or phrase (each bracketed character inside the wrapped span keeps its own brackets).
+- Avoid vulgar/slang meanings unless explicitly requested.
+- Example sentences must be appropriate for general learners (no sexual or offensive content).`;
+}
+
+export function buildRomanizedSingleWordInstructionText(languageLabel, romanizationSystem) {
+    return `You will be provided one word, either in ${languageLabel} or in English.
+If it is English, find the best ${languageLabel} equivalent first, then proceed as if that word was given.
+
+Return ONLY one valid JSON object with the following fields:
+{
+  "word": "...",
+  "pronunciation": "...",
+  "meaning": "...",
+  "partOfSpeech": "...",
+  "exampleSentence": "...",
+  "exampleSentencePronunciation": "...",
+  "exampleSentenceEnglish": "..."
+}
+
+Rules:
+- Romanize using ${romanizationSystem}, with every character individually bracketed (e.g. 你[nǐ]好[hǎo]).
+- If the provided word is slang, casual, or affectionate, DO NOT replace it with a more standard or dictionary form.
+- Always treat the given surface form as its own entry. Preserve its nuance (casual, affectionate, childish, etc.) in meaning and example sentences.
+- Sentences must be original and show natural, real-world usage.
+- Do not repeat the word alone or use dictionary-style definitions as examples.
+- The exampleSentence must contain no romanization at all; exampleSentencePronunciation must be the identical sentence with every character bracketed.`;
+}

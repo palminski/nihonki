@@ -5,11 +5,16 @@ import { Pressable, NativeModules, Alert } from 'react-native';
 import './global.css';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import HomeScreen from '~/screens/HomeScreen';
+import JapaneseHomeScreen from '~/screens/JapaneseHomeScreen';
+import AddWordsScreen from '~/screens/AddWordsScreen';
+import LanguageSelectScreen from '~/screens/LanguageSelectScreen';
+import ManageLanguagesScreen from '~/screens/ManageLanguagesScreen';
 import SettingsScreen from '~/screens/SettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { getIsUserSubscribed, getDeviceInfo } from '~/utils/subscriptionMethods';
-import VocabListScreen from '~/screens/VocabListScreen';
+import CardListScreen from '~/screens/CardListScreen';
+import CardEditScreen from '~/screens/CardEditScreen';
+import ReviewScreen from '~/screens/ReviewScreen';
 import { useEffect, createContext, useState } from 'react';
 import Purchases from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -108,9 +113,9 @@ export default function App() {
                     >
                         <Stack.Screen
                             name='Home'
-                            component={HomeScreen}
+                            component={LanguageSelectScreen}
                             options={({ navigation }) => ({
-                                title: "Umeboshi",
+                                title: "Nihonki",
 
                                 headerRight: () => (
                                     <Pressable onPress={() => { navigation.navigate("Settings") }} style={{ marginRight: 15 }}>
@@ -118,6 +123,24 @@ export default function App() {
                                     </Pressable>
                                 ),
                             })}
+                        />
+                        <Stack.Screen
+                            name='Japanese'
+                            component={JapaneseHomeScreen}
+                            options={({ route }) => ({
+                                title: (route.params as { languageLabel?: string } | undefined)?.languageLabel ?? "Umeboshi",
+                                headerStyle: { backgroundColor: "#050505" },
+                                headerTintColor: "#fff",
+                            })}
+                        />
+                        <Stack.Screen
+                            name='Manage Languages'
+                            component={ManageLanguagesScreen}
+                            options={{
+                                title: "Manage Languages",
+                                headerStyle: { backgroundColor: "#050505" },
+                                headerTintColor: "#fff",
+                            }}
                         />
                         <Stack.Screen
                             name='Settings'
@@ -130,10 +153,40 @@ export default function App() {
                         />
 
                         <Stack.Screen
-                            name='Vocab List'
-                            component={VocabListScreen}
+                            name='Card List'
+                            component={CardListScreen}
                             options={{
-                                title: "Vocab List",
+                                title: "Card List",
+                                headerStyle: { backgroundColor: "#050505" },
+                                headerTintColor: "#fff",
+                            }}
+                        />
+
+                        <Stack.Screen
+                            name='Edit Card'
+                            component={CardEditScreen}
+                            options={{
+                                title: "Edit Card",
+                                headerStyle: { backgroundColor: "#050505" },
+                                headerTintColor: "#fff",
+                            }}
+                        />
+
+                        <Stack.Screen
+                            name='Review'
+                            component={ReviewScreen}
+                            options={{
+                                title: "Review",
+                                headerStyle: { backgroundColor: "#050505" },
+                                headerTintColor: "#fff",
+                            }}
+                        />
+
+                        <Stack.Screen
+                            name='Add Words'
+                            component={AddWordsScreen}
+                            options={{
+                                title: "Add Words",
                                 headerStyle: { backgroundColor: "#050505" },
                                 headerTintColor: "#fff",
                             }}

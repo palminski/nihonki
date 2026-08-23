@@ -1,0 +1,340 @@
+import { forwardRef, useImperativeHandle, useRef } from "react";
+import { Animated, PanResponder, View, Text, Pressable, Dimensions, StyleSheet } from "react-native";
+import FuriganaText from "~/components/FuriganaText";
+import { VocabCard as VocabWord, normalizeCard } from "~/utils/cardTypes";
+
+interface SwipeCardProps {
+    vocabWord: VocabWord;
+    onSwipeRight: () => void;
+    onSwipeLeft: () => void;
+    onFlipChange?: (isFlipped: boolean) => void;
+}
+
+export interface SwipeCardHandle {
+    flip: () => void;
+    swipeRight: () => void;
+    swipeLeft: () => void;
+}
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+
+// Renders text containing <b></b> markers as nested Text spans, no furigana involved.
+function renderBoldSegments(text: string, boldStyle: object) {
+    const parts = text.split(/(<b>|<\/b>)/);
+    let bold = false;
+    return parts.map((part, i) => {
+        if (part === "<b>") { bold = true; return null; }
+        if (part === "</b>") { bold = false; return null; }
+        if (!part) return null;
+        return (
+            <Text key={i} style={bold ? boldStyle : undefined}>
+                {part}
+            </Text>
+        );
+    });
+}
+
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard(
+    { vocabWord, onSwipeRight, onSwipeLeft, onFlipChange },
+    ref
+) {
+    const position = useRef(new Animated.ValueXY()).current;
+    const flipAnim = useRef(new Animated.Value(0)).current;
+    const isFlippedRef = useRef(false);
+
+    function setFlipped(value: boolean) {
+        isFlippedRef.current = value;
+        onFlipChange?.(value);
+        Animated.timing(flipAnim, {
+            toValue: value ? 1 : 0,
+            duration: 350,
+            useNativeDriver: true,
+        }).start();
+    }
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 8,
+            onPanResponderMove: Animated.event(
+                [null, { dx: position.x, dy: position.y }],
+                { useNativeDriver: false }
+            ),
+            onPanResponderRelease: (_, gesture) => {
+                if (gesture.dx > SWIPE_THRESHOLD) {
+                    forceSwipe("right");
+                } else if (gesture.dx < -SWIPE_THRESHOLD) {
+                    forceSwipe("left");
+                } else {
+                    resetPosition();
+                }
+            },
+        })
+    ).current;
+
+    function forceSwipe(direction: "right" | "left") {
+        const x = direction === "right" ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
+        Animated.timing(position, {
+            toValue: { x, y: 0 },
+            duration: 250,
+            useNativeDriver: false,
+        }).start(() => {
+            if (direction === "right") {
+                onSwipeRight();
+            } else {
+                onSwipeLeft();
+            }
+        });
+    }
+
+    function resetPosition() {
+        Animated.spring(position, {
+            toValue: { x: 0, y: 0 },
+            useNativeDriver: false,
+        }).start();
+    }
+
+    useImperativeHandle(ref, () => ({
+        flip: () => setFlipped(!isFlippedRef.current),
+        swipeRight: () => {
+            if (isFlippedRef.current) forceSwipe("right");
+        },
+        swipeLeft: () => {
+            if (isFlippedRef.current) forceSwipe("left");
+        },
+    }));
+
+    const rotate = position.x.interpolate({
+        inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
+        outputRange: ["-10deg", "0deg", "10deg"],
+    });
+
+    const goodOpacity = position.x.interpolate({
+        inputRange: [0, SWIPE_THRESHOLD],
+        outputRange: [0, 1],
+        extrapolate: "clamp",
+    });
+
+    const againOpacity = position.x.interpolate({
+        inputRange: [-SWIPE_THRESHOLD, 0],
+        outputRange: [1, 0],
+        extrapolate: "clamp",
+    });
+
+    const cardStyle = {
+        transform: [
+            { translateX: position.x },
+            { translateY: position.y },
+            { rotate },
+        ],
+    };
+
+    const frontRotateY = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] });
+    const backRotateY = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ["180deg", "360deg"] });
+    const frontFaceOpacity = flipAnim.interpolate({
+        inputRange: [0, 0.5, 0.5001, 1],
+        outputRange: [1, 1, 0, 0],
+    });
+    const backFaceOpacity = flipAnim.interpolate({
+        inputRange: [0, 0.4999, 0.5, 1],
+        outputRange: [0, 0, 1, 1],
+    });
+
+    const view = normalizeCard(vocabWord);
+
+    return (
+        <Animated.View {...panResponder.panHandlers} style={[styles.card, cardStyle]}>
+            <Pressable style={{ flex: 1 }} onPress={() => setFlipped(!isFlippedRef.current)}>
+                <Animated.View style={[styles.stamp, styles.goodStamp, { opacity: goodOpacity }]}>
+                    <Text style={styles.stampKanjiGood}>正</Text>
+                </Animated.View>
+                <Animated.View style={[styles.stamp, styles.againStamp, { opacity: againOpacity }]}>
+                    <Text style={styles.stampKanjiBad}>誤</Text>
+                </Animated.View>
+
+                <Animated.View
+                    style={[
+                        styles.cardFace,
+                        {
+                            opacity: frontFaceOpacity,
+                            transform: [{ perspective: 1200 }, { rotateY: frontRotateY }],
+                        },
+                    ]}
+                >
+                    <Text style={styles.kanjiText}>{view.headword}</Text>
+                    <Text style={styles.frontSentenceText}>
+                        {renderBoldSegments(view.exampleSentencePlain, styles.sentenceBold)}
+                    </Text>
+                    <Text style={styles.hintText}>Tap to reveal</Text>
+                </Animated.View>
+
+                <Animated.View
+                    style={[
+                        styles.cardFace,
+                        {
+                            opacity: backFaceOpacity,
+                            transform: [{ perspective: 1200 }, { rotateY: backRotateY }],
+                        },
+                    ]}
+                >
+                    {view.pronunciation ? (
+                        <View style={{ marginBottom: 4 }}>
+                            <FuriganaText
+                                text={view.pronunciation}
+                                textStyle={styles.backKanjiText}
+                                furiganaStyle={styles.backFuriganaText}
+                            />
+                        </View>
+                    ) : (
+                        <Text style={styles.backKanjiText}>{view.headword}</Text>
+                    )}
+                    <Text style={styles.meaningText}>{view.meaning}</Text>
+                    <Text style={styles.posText}>{view.partOfSpeech}</Text>
+
+                    <View style={styles.divider} />
+
+                    {view.exampleSentenceAnnotated ? (
+                        <FuriganaText
+                            text={view.exampleSentenceAnnotated}
+                            textStyle={styles.sentenceText}
+                            furiganaStyle={styles.furiganaText}
+                            boldStyle={styles.sentenceBold}
+                        />
+                    ) : (
+                        <Text style={styles.sentenceText}>
+                            {renderBoldSegments(view.exampleSentencePlain, styles.sentenceBold)}
+                        </Text>
+                    )}
+                    <Text style={styles.sentenceEnglish}>{view.exampleSentenceEnglish}</Text>
+                </Animated.View>
+            </Pressable>
+        </Animated.View>
+    );
+});
+
+export default SwipeCard;
+
+const styles = StyleSheet.create({
+    card: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    cardFace: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: "center",
+        alignItems: "center",
+        borderRadius: 16,
+        backgroundColor: "#050505",
+        borderWidth: 1,
+        borderColor: "#6b21a8",
+        shadowColor: "#a855f7",
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        padding: 20,
+        backfaceVisibility: "hidden",
+    },
+    kanjiText: {
+        color: "#fff",
+        fontSize: 64,
+        fontWeight: "600",
+    },
+    frontSentenceText: {
+        color: "#e9d5ff",
+        fontSize: 20,
+        lineHeight: 26,
+        textAlign: "center",
+        marginTop: 24,
+    },
+    hintText: {
+        color: "#c084fc80",
+        marginTop: 20,
+        fontSize: 14,
+    },
+    backKanjiText: {
+        color: "#fff",
+        fontSize: 48,
+        fontWeight: "600",
+    },
+    backFuriganaText: {
+        color: "#e6b3ff",
+        fontSize: 16,
+        lineHeight: 18,
+    },
+    meaningText: {
+        color: "#fff",
+        fontSize: 24,
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    posText: {
+        color: "#c084fc",
+        fontSize: 14,
+        marginTop: 4,
+        fontStyle: "italic",
+    },
+    divider: {
+        height: 1,
+        width: "60%",
+        backgroundColor: "#6b21a8",
+        marginVertical: 20,
+    },
+    sentenceText: {
+        color: "#e9d5ff",
+        fontSize: 20,
+        lineHeight: 20,
+    },
+    sentenceBold: {
+        fontWeight: "bold",
+        color: "#fff",
+    },
+    furiganaText: {
+        color: "#c084fc",
+        fontSize: 11,
+        lineHeight: 13,
+    },
+    sentenceEnglish: {
+        color: "#c084fc",
+        marginTop: 14,
+        fontSize: 15,
+        textAlign: "center",
+    },
+    stamp: {
+        position: "absolute",
+        top: 20,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        borderWidth: 3,
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10,
+    },
+    goodStamp: {
+        left: 20,
+        borderColor: "#4ade80",
+        transform: [{ rotate: "-15deg" }],
+    },
+    againStamp: {
+        right: 20,
+        borderColor: "#f87171",
+        transform: [{ rotate: "15deg" }],
+    },
+    stampKanjiGood: {
+        fontWeight: "bold",
+        fontSize: 32,
+        color: "#4ade80",
+    },
+    stampKanjiBad: {
+        fontWeight: "bold",
+        fontSize: 32,
+        color: "#f87171",
+    },
+});

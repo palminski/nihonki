@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const DECK_KEY = "defaultDeck"
 const OPENAI_API_KEY = "none"
+const ANKI_ENABLED_KEY = "ankiEnabled"
 
 export async function updateDeckSetting(deckName:string) {
     try {
@@ -36,5 +37,23 @@ export async function loadAPIKeySetting() {
     } catch (error) {
         console.error("Failed To Load API Key", error);
         null;
+    }
+}
+
+export async function updateAnkiEnabledSetting(enabled: boolean) {
+    try {
+        await AsyncStorage.setItem(ANKI_ENABLED_KEY, enabled ? "true" : "false");
+    } catch (error) {
+        console.error("Failed To Save Anki Enabled Setting", error);
+    }
+}
+
+export async function loadAnkiEnabledSetting() {
+    try {
+       const ankiEnabled = await AsyncStorage.getItem(ANKI_ENABLED_KEY);
+       return ankiEnabled === "true";
+    } catch (error) {
+        console.error("Failed To Load Anki Enabled Setting", error);
+        return false;
     }
 }

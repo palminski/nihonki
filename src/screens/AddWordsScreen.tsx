@@ -6,17 +6,26 @@ import { loadAPIKeySetting } from "~/utils/settingsManager";
 import { loadVocabList, updateVocabList } from "~/utils/asyncStorageManager";
 import { Ionicons } from "@expo/vector-icons";
 import LinearGradient from "react-native-linear-gradient";
-import { NavigationProp, useFocusEffect } from "@react-navigation/native";
+import { NavigationProp, useFocusEffect, useRoute } from "@react-navigation/native";
 import VocabCard from "~/components/VocabCard";
 import ImageView from "react-native-image-viewing";
 import axios from "axios";
 import Purchases from "react-native-purchases";
 import { getIsUserSubscribed, promptUserSubscription, getDeviceInfo } from "~/utils/subscriptionMethods";
-import { translateImage, translateWord } from "~/utils/aiAPICalls";
+import { translateImage, translateWord, translateWordGeneric, translateWordRomanized } from "~/utils/aiAPICalls";
+import { getRequiredCardFields, getCardShape, getRomanizationSystem } from "~/utils/cardTypes";
+import { getCardKey } from "~/utils/deckManager";
 import { AppContext } from "App";
 import UmeboshiChan from "../assets/UmeboshiChan.svg";
 
-export default function HomeScreen({ navigation }: { navigation: NavigationProp<any> }) {
+export default function AddWordsScreen({ navigation }: { navigation: NavigationProp<any> }) {
+    const route = useRoute();
+    const { languageId = "japanese", languageLabel = "Japanese" } =
+        (route.params as { languageId?: string; languageLabel?: string } | undefined) ?? {};
+    const isJapanese = languageId === "japanese";
+    const cardShape = getCardShape(languageId);
+    const romanizationSystem = getRomanizationSystem(languageId);
+
     const [currentRequests, setCurrentRequests] = useState<Record<string, string>>({});
 
     const [inputText, setInputText] = useState<string>("");
@@ -125,20 +134,24 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                     return;
                 }
 
+                cardObjectArray.forEach(cardObject => {
+                    cardObject.languageId = "japanese";
+                });
+
                 let vocabList = await loadVocabList()
                 cardObjectArray.forEach(cardObject => {
                     const { valid, missing } = ValidateCardData(cardObject);
                     if (!valid) {
                         return;
                     }
-                    vocabList[cardObject.kanji + "_" + cardObject.kana] = cardObject;
+                    vocabList[getCardKey(cardObject)] = cardObject;
                 });
                 await updateVocabList(vocabList);
 
 
                 setKanjiObjectArray(prev => {
                     const filteredPrev = prev.filter(
-                        kanjiObjectArray => !cardObjectArray.some(cardObject => cardObject.kanji === kanjiObjectArray.kanji)
+                        kanjiObjectArray => !cardObjectArray.some(cardObject => getCardKey(cardObject) === getCardKey(kanjiObjectArray))
                     );
                     return [...cardObjectArray, ...filteredPrev]
                 });
@@ -175,7 +188,13 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
 
             // Make request from app or from server depending on if user input a key
             if (key) {
-                jsonString = await translateWord(textToSend);
+                if (isJapanese) {
+                    jsonString = await translateWord(textToSend);
+                } else if (cardShape === "romanized") {
+                    jsonString = await translateWordRomanized(textToSend, languageLabel, romanizationSystem);
+                } else {
+                    jsonString = await translateWordGeneric(textToSend, languageLabel);
+                }
             } else {
                 try {
                     const appUserId = userData.appUserId;
@@ -183,11 +202,20 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                         ...prev,
                         wordsRemaining: Math.max(0, prev.wordsRemaining - 1),
                     }));
-                    const response = await axios.post(
-                        // `http://10.0.0.187:8000/api/ai_translation/single_word`,
-                        `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
-                        { wordToTranslate: textToSend, appUserId: appUserId },
-                        {});
+                    const response = isJapanese
+                        ? await axios.post(
+                            `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/single_word`,
+                            { wordToTranslate: textToSend, appUserId: appUserId },
+                            {})
+                        : cardShape === "romanized"
+                            ? await axios.post(
+                                `https://nihonki-server-udaaiuh2.on-forge.com/api/v2/ai_translation/single_word_romanized`,
+                                { wordToTranslate: textToSend, appUserId: appUserId, targetLanguage: languageLabel, romanizationSystem: romanizationSystem },
+                                {})
+                            : await axios.post(
+                                `https://nihonki-server-udaaiuh2.on-forge.com/api/v2/ai_translation/single_word`,
+                                { wordToTranslate: textToSend, appUserId: appUserId, targetLanguage: languageLabel },
+                                {});
                     jsonString = response.data.message;
                 } catch (error: any) {
                     setUserData(prev => ({
@@ -208,6 +236,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             if (jsonString !== null) {
                 //Validate Response
                 const cardObject = JSON.parse(jsonString);
+                cardObject.languageId = languageId;
                 const { valid, missing } = ValidateCardData(cardObject);
                 if (!valid) {
                     Alert.alert("Something was wrong with the response");
@@ -215,12 +244,12 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                 }
                 //Add Vocab Word To VOcab Word Array
                 setKanjiObjectArray(prev => {
-                    const filtered = prev.filter(k => k.kanji !== cardObject.kanji);
+                    const filtered = prev.filter(k => getCardKey(k) !== getCardKey(cardObject));
                     return [cardObject, ...filtered]
                 })
                 // Update App Vocab List
                 let vocabList = await loadVocabList()
-                vocabList[cardObject.kanji + "_" + cardObject.kana] = cardObject;
+                vocabList[getCardKey(cardObject)] = cardObject;
                 updateVocabList(vocabList);
             }
 
@@ -253,17 +282,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
     }
 
     function ValidateCardData(data: any): { valid: boolean; missing: string[] } {
-        let requiredFields = [
-            "kanji",
-            "kana",
-            "furigana",
-            "meaning",
-            "partOfSpeech",
-            "exampleSentenceKanji",
-            "exampleSentenceFurigana",
-            "exampleSentenceKana",
-            "exampleSentenceEnglish"
-        ]
+        const requiredFields = getRequiredCardFields(data.languageId ?? languageId);
         const missing = requiredFields.filter((key) => !(key in data) || data[key] === "");
         return {
             valid: missing.length === 0,
@@ -352,8 +371,8 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
                         (kanjiObjectArray.length > 0 || Object.entries(currentRequests).length > 0) ?
                             <>
                                 {kanjiObjectArray.map((kanji: any, index: number) => (
-                                    <View key={kanji.kanji}>
-                                        <VocabCard vocabWord={kanji} />
+                                    <View key={getCardKey(kanji)}>
+                                        <VocabCard vocabWord={kanji} languageId={languageId} />
                                     </View>
                                 ))}
                             </>
@@ -392,23 +411,21 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
             {/* Bottom Menu */}
             <View className="relative bg-transparent">
                 <View className="flex-row justify-around items-end py-1 bg-[#000000]">
-                    <Pressable onPress={() => { navigation.navigate("Vocab List") }} className="items-center w-1/3">
-                        <Ionicons name="list" size={30} color={"#fff"} />
-                        <Text className="text-white text-xs mt-1">Vocab List</Text>
-                    </Pressable>
-                    <View className="items-center w-1/3 relative">
-                        <Pressable onPress={handleOpenCamera} className="">
-                            <Ionicons name="camera" size={50} color={"#fff"} />
-                            {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
-                                <View className="absolute -top-1 -right-3 bg-purple-400 rounded-full w-7 h-7 items-center justify-center shadow">
-                                    <Text className="font-bold">{userData.imagesRemaining}</Text>
-                                </View>
-                            }
+                    {isJapanese &&
+                        <View className="items-center w-1/2 relative">
+                            <Pressable onPress={handleOpenCamera} className="">
+                                <Ionicons name="camera" size={50} color={"#fff"} />
+                                {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
+                                    <View className="absolute -top-1 -right-3 bg-purple-400 rounded-full w-7 h-7 items-center justify-center shadow">
+                                        <Text className="font-bold">{userData.imagesRemaining}</Text>
+                                    </View>
+                                }
 
-                        </Pressable>
-                        <Text className="text-white text-xs mt-1">Scan Text</Text>
-                    </View>
-                    <View className="items-center w-1/3 relative">
+                            </Pressable>
+                            <Text className="text-white text-xs mt-1">Scan Text</Text>
+                        </View>
+                    }
+                    <View className={isJapanese ? "items-center w-1/2 relative" : "items-center w-full relative"}>
                         <Pressable onPress={handleEnterText}>
                             <Ionicons name="create-outline" size={30} color={"#fff"} />
                             {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
