@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, Switch } from "react-native";
+import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, Switch, Platform } from "react-native";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import ScreenWrapper from "~/components/ScreenWrapper";
@@ -11,6 +11,8 @@ export default function LanguageSettingsScreen() {
     const { languageId = "japanese", languageLabel = "Japanese" } =
         (route.params as { languageId?: string; languageLabel?: string } | undefined) ?? {};
     const isJapanese = languageId === "japanese";
+    // AnkiDroid is Android-only and (for now) only ever wired up for Japanese.
+    const showAnkiSettings = isJapanese && Platform.OS === "android";
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -25,8 +27,8 @@ export default function LanguageSettingsScreen() {
             (async () => {
                 setLoading(true);
                 const newCardsPerDay = await loadNewCardsPerDay(languageId);
-                const ankiEnabled = isJapanese ? await loadAnkiEnabledSetting(languageId) : false;
-                const insertDeck = isJapanese ? await loadDeckSetting(languageId) : "";
+                const ankiEnabled = showAnkiSettings ? await loadAnkiEnabledSetting(languageId) : false;
+                const insertDeck = showAnkiSettings ? await loadDeckSetting(languageId) : "";
                 setSettingForm({
                     newCardsPerDay: String(newCardsPerDay),
                     ankiEnabled,
@@ -53,7 +55,7 @@ export default function LanguageSettingsScreen() {
                 : DEFAULT_NEW_CARDS_PER_DAY
         );
 
-        if (isJapanese) {
+        if (showAnkiSettings) {
             await updateAnkiEnabledSetting(languageId, settingForm.ankiEnabled);
             await updateDeckSetting(languageId, settingForm.insertDeck);
         }
@@ -101,7 +103,7 @@ export default function LanguageSettingsScreen() {
                     />
                 </View>
 
-                {isJapanese && (
+                {showAnkiSettings && (
                     <>
                         <View className="mb-3">
                             <View className="flex-row items-center justify-between">

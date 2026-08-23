@@ -1,7 +1,7 @@
 
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
-import { Pressable, NativeModules, Alert } from 'react-native';
+import { Pressable, NativeModules, Alert, Platform } from 'react-native';
 import './global.css';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,6 +13,7 @@ import SettingsScreen from '~/screens/SettingsScreen';
 import LanguageSettingsScreen from '~/screens/LanguageSettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { getIsUserSubscribed, getDeviceInfo } from '~/utils/subscriptionMethods';
+import { loadAnkiEnabledSetting } from '~/utils/settingsManager';
 import CardListScreen from '~/screens/CardListScreen';
 import CardEditScreen from '~/screens/CardEditScreen';
 import ReviewScreen from '~/screens/ReviewScreen';
@@ -49,6 +50,13 @@ export default function App() {
 
     useEffect(() => {
         (async () => {
+            // AnkiDroid only exists on Android, and only Japanese exposes the Anki
+            // integration toggle — skip the native permission prompt entirely unless
+            // both are true, rather than always poking a module that may not exist.
+            if (Platform.OS !== 'android') return;
+            const ankiEnabled = await loadAnkiEnabledSetting('japanese');
+            if (!ankiEnabled) return;
+
             try {
                 await AnkiModule.checkAndRequestPermissions();
             } catch (error: any) {

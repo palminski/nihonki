@@ -1,4 +1,4 @@
-import { View, Text, Pressable, NativeModules, Alert } from "react-native";
+import { View, Text, Pressable, NativeModules, Alert, Platform } from "react-native";
 import { useState } from "react";
 import { useEffect, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -39,7 +39,7 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
     }
 
     async function handleSendToAnki(cardObject: VocabCardData) {
-        if (!isJapaneseCard(cardObject)) return;
+        if (Platform.OS !== "android" || !isJapaneseCard(cardObject)) return;
         const deckToInsertInto = await loadDeckSetting(languageId);
         try {
             const result = await AnkiModule.addNote(
@@ -94,7 +94,7 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
                             </Pressable>
                     }
                     {
-                        isAnkiEnabled && isJapanese &&
+                        Platform.OS === "android" && isAnkiEnabled && isJapanese &&
                         <View className="mt-2">
                             {
                                 !isAdded ?
