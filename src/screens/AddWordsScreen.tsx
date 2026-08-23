@@ -3,7 +3,6 @@ import * as ImagePicker from "expo-image-picker";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState, useRef, useEffect, useContext, useCallback } from "react";
 import { loadAPIKeySetting } from "~/utils/settingsManager";
-import { loadVocabList, updateVocabList } from "~/utils/asyncStorageManager";
 import { Ionicons } from "@expo/vector-icons";
 import LinearGradient from "react-native-linear-gradient";
 import { NavigationProp, useFocusEffect, useRoute } from "@react-navigation/native";
@@ -138,17 +137,6 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                     cardObject.languageId = "japanese";
                 });
 
-                let vocabList = await loadVocabList()
-                cardObjectArray.forEach(cardObject => {
-                    const { valid, missing } = ValidateCardData(cardObject);
-                    if (!valid) {
-                        return;
-                    }
-                    vocabList[getCardKey(cardObject)] = cardObject;
-                });
-                await updateVocabList(vocabList);
-
-
                 setKanjiObjectArray(prev => {
                     const filteredPrev = prev.filter(
                         kanjiObjectArray => !cardObjectArray.some(cardObject => getCardKey(cardObject) === getCardKey(kanjiObjectArray))
@@ -247,10 +235,6 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                     const filtered = prev.filter(k => getCardKey(k) !== getCardKey(cardObject));
                     return [cardObject, ...filtered]
                 })
-                // Update App Vocab List
-                let vocabList = await loadVocabList()
-                vocabList[getCardKey(cardObject)] = cardObject;
-                updateVocabList(vocabList);
             }
 
         } catch (error: any) {

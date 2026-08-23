@@ -10,6 +10,7 @@ import AddWordsScreen from '~/screens/AddWordsScreen';
 import LanguageSelectScreen from '~/screens/LanguageSelectScreen';
 import ManageLanguagesScreen from '~/screens/ManageLanguagesScreen';
 import SettingsScreen from '~/screens/SettingsScreen';
+import LanguageSettingsScreen from '~/screens/LanguageSettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { getIsUserSubscribed, getDeviceInfo } from '~/utils/subscriptionMethods';
 import CardListScreen from '~/screens/CardListScreen';
@@ -115,7 +116,7 @@ export default function App() {
                             name='Home'
                             component={LanguageSelectScreen}
                             options={({ navigation }) => ({
-                                title: "Nihonki",
+                                title: "Umeboshi",
 
                                 headerRight: () => (
                                     <Pressable onPress={() => { navigation.navigate("Settings") }} style={{ marginRight: 15 }}>
@@ -127,8 +128,25 @@ export default function App() {
                         <Stack.Screen
                             name='Japanese'
                             component={JapaneseHomeScreen}
-                            options={({ route }) => ({
+                            options={({ route, navigation }) => ({
                                 title: (route.params as { languageLabel?: string } | undefined)?.languageLabel ?? "Umeboshi",
+                                headerStyle: { backgroundColor: "#050505" },
+                                headerTintColor: "#fff",
+                                headerRight: () => (
+                                    <Pressable
+                                        onPress={() => { navigation.navigate("Language Settings", route.params) }}
+                                        style={{ marginRight: 15 }}
+                                    >
+                                        <Ionicons name="settings-outline" size={24} color="#e6b3ff" />
+                                    </Pressable>
+                                ),
+                            })}
+                        />
+                        <Stack.Screen
+                            name='Language Settings'
+                            component={LanguageSettingsScreen}
+                            options={({ route }) => ({
+                                title: `${(route.params as { languageLabel?: string } | undefined)?.languageLabel ?? "Language"} Settings`,
                                 headerStyle: { backgroundColor: "#050505" },
                                 headerTintColor: "#fff",
                             })}
@@ -175,21 +193,21 @@ export default function App() {
                         <Stack.Screen
                             name='Review'
                             component={ReviewScreen}
-                            options={{
-                                title: "Review",
+                            options={({ route }) => ({
+                                title: `${(route.params as { languageLabel?: string } | undefined)?.languageLabel ?? ""} Review`.trim(),
                                 headerStyle: { backgroundColor: "#050505" },
                                 headerTintColor: "#fff",
-                            }}
+                            })}
                         />
 
                         <Stack.Screen
                             name='Add Words'
                             component={AddWordsScreen}
-                            options={{
-                                title: "Add Words",
+                            options={({ route }) => ({
+                                title: `${(route.params as { languageLabel?: string } | undefined)?.languageLabel ?? ""} Add Words`.trim(),
                                 headerStyle: { backgroundColor: "#050505" },
                                 headerTintColor: "#fff",
-                            }}
+                            })}
                         />
                     </Stack.Navigator>
                 </NavigationContainer>

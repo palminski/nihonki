@@ -27,7 +27,7 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
     useFocusEffect(
         useCallback(() => {
             (async () => {
-                setIsAnkiEnabled(await loadAnkiEnabledSetting());
+                setIsAnkiEnabled(await loadAnkiEnabledSetting(languageId));
                 setIsInDeck(await isCardInReviewDeck(languageId, vocabWord));
             })();
         }, [vocabWord, languageId])
@@ -40,7 +40,7 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
 
     async function handleSendToAnki(cardObject: VocabCardData) {
         if (!isJapaneseCard(cardObject)) return;
-        const deckToInsertInto = await loadDeckSetting();
+        const deckToInsertInto = await loadDeckSetting(languageId);
         try {
             const result = await AnkiModule.addNote(
                 cardObject.kanji,

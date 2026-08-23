@@ -1,11 +1,10 @@
-import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, NativeModules, Linking, Switch } from "react-native";
+import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, NativeModules, Linking } from "react-native";
 import { useEffect, useState, useCallback, useContext } from "react";
 import ScreenWrapper from "~/components/ScreenWrapper";
-import { loadDeckSetting, updateDeckSetting, loadAPIKeySetting, updateAPIKeySetting, loadAnkiEnabledSetting, updateAnkiEnabledSetting } from "~/utils/settingsManager";
+import { loadAPIKeySetting, updateAPIKeySetting } from "~/utils/settingsManager";
 import { useFocusEffect } from "@react-navigation/native";
 import LinearGradient from "react-native-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { loadVocabList } from "~/utils/asyncStorageManager";
 import axios from "axios";
 import Purchases from 'react-native-purchases';
 import { attemptToResoreSubscription, getIsUserSubscribed, promptUserSubscription } from "~/utils/subscriptionMethods";
@@ -21,9 +20,7 @@ export default function SettingsScreen() {
     const [debugResponse, setDebugResponse] = useState("");
 
     const [settingForm, setSettingsForm] = useState({
-        insertDeck: "",
         apiKey: "",
-        ankiEnabled: false
     });
 
 
@@ -32,14 +29,10 @@ export default function SettingsScreen() {
             (async () => {
                 setLoading(true);
 
-                const deckSetting = await loadDeckSetting();
                 const apiKeySetting = await loadAPIKeySetting();
-                const ankiEnabledSetting = await loadAnkiEnabledSetting();
                 setSettingsForm({
                     ...settingForm,
-                    insertDeck: deckSetting != null ? deckSetting : "",
                     apiKey: apiKeySetting != null ? apiKeySetting : "",
-                    ankiEnabled: ankiEnabledSetting,
                 });
 
 
@@ -48,7 +41,7 @@ export default function SettingsScreen() {
         }, [])
     )
 
-    const handleFormChange = (key: string, value: string | boolean) => {
+    const handleFormChange = (key: string, value: string) => {
         setSettingsForm({
             ...settingForm,
             [key]: value,
@@ -59,8 +52,6 @@ export default function SettingsScreen() {
         if (loading) return;
         setLoading(true);
         await updateAPIKeySetting(settingForm.apiKey);
-        await updateDeckSetting(settingForm.insertDeck);
-        await updateAnkiEnabledSetting(settingForm.ankiEnabled);
         setLoading(false);
         Alert.alert("Setting Saved!")
     }
@@ -99,40 +90,6 @@ export default function SettingsScreen() {
                     showsVerticalScrollIndicator={false}
                     className="p-4"
                 >
-
-                    <View className="mb-3">
-                        <View className="flex-row items-center justify-between">
-                            <View className="flex-row items-center">
-                                <Text className="text-white text-lg mr-2">
-                                    Enable AnkiDroid Communication
-                                </Text>
-                                <Pressable onPress={() => Alert.alert("Enable AnkiDroid Communication", "When enabled, cards can be sent directly to the AnkiDroid app on your device. Requires AnkiDroid to be installed.")} className="items-center">
-                                    <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
-                                </Pressable>
-                            </View>
-                            <Switch
-                                value={settingForm.ankiEnabled}
-                                onValueChange={(value) => handleFormChange('ankiEnabled', value)}
-                                trackColor={{ false: "#3f3f46", true: "#7e22ce" }}
-                                thumbColor={"#e6b3ff"}
-                            />
-                        </View>
-                    </View>
-
-                    {
-                        settingForm.ankiEnabled &&
-                        <View className="mb-3">
-                            <View className="flex-row items-center">
-                                <Text className="text-white text-lg mr-2">
-                                    Anki Deck To Insert Into
-                                </Text>
-                                <Pressable onPress={() => Alert.alert("Anki Deck To Insert Into", "When send to anki is clicked this is the deck new cards will be inserted into. If no deck with the given name exists a new one will be made. If no text is entered here it will default to Umeboshi")} className="items-center">
-                                    <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
-                                </Pressable>
-                            </View>
-                            <TextInput className='bg-black border mb-2 shadow-lg shadow-purple-300 border-purple-800 my-1 rounded text-purple-300 placeholder:text-purple-300/50' value={settingForm.insertDeck} onChangeText={(text) => handleFormChange('insertDeck', text)} placeholder='Deck Name (Defaults to Umeboshi)' />
-                        </View>
-                    }
 
                     <View className="mb-3">
 

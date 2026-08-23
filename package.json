@@ -38,7 +38,8 @@
     "react-native-svg": "15.12.1",
     "react-native-svg-transformer": "^1.5.2",
     "react-native-worklets": "0.5.1",
-    "react-native-worklets-core": "^1.6.2"
+    "react-native-worklets-core": "^1.6.2",
+    "ts-fsrs": "^5.4.1"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

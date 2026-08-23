@@ -4,13 +4,15 @@ import ScreenWrapper from "~/components/ScreenWrapper";
 import { NavigationProp, useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LANGUAGE_CATALOG, Language, loadEnabledLanguages } from "~/utils/languageManager";
-import { loadReviewDeck } from "~/utils/deckManager";
+import { getDueCounts, DueCounts } from "~/utils/srsManager";
+
+const EMPTY_DUE_COUNTS: DueCounts = { newCount: 0, learningCount: 0, reviewCount: 0 };
 
 export default function LanguageSelectScreen({ navigation }: { navigation: NavigationProp<any> }) {
     const [enabledLanguages, setEnabledLanguages] = useState<Language[]>(
         LANGUAGE_CATALOG.filter((language) => language.id === "japanese")
     );
-    const [cardCounts, setCardCounts] = useState<Record<string, number>>({});
+    const [dueCounts, setDueCounts] = useState<Record<string, DueCounts>>({});
 
     useFocusEffect(
         useCallback(() => {
@@ -19,14 +21,13 @@ export default function LanguageSelectScreen({ navigation }: { navigation: Navig
                 const languages = LANGUAGE_CATALOG.filter((language) => enabledIds.includes(language.id));
                 setEnabledLanguages(languages);
 
-                const counts: Record<string, number> = {};
+                const counts: Record<string, DueCounts> = {};
                 await Promise.all(
                     languages.map(async (language) => {
-                        const deck = await loadReviewDeck(language.id);
-                        counts[language.id] = Object.keys(deck).length;
+                        counts[language.id] = await getDueCounts(language.id);
                     })
                 );
-                setCardCounts(counts);
+                setDueCounts(counts);
             })();
         }, [])
     );
@@ -58,9 +59,19 @@ export default function LanguageSelectScreen({ navigation }: { navigation: Navig
                                 <Text className="text-white text-xl font-semibold">{language.label}</Text>
                                 <Text className="text-purple-300/70 text-base">{language.nativeLabel}</Text>
                             </View>
-                            <Text className="text-purple-300/70 text-sm">
-                                {cardCounts[language.id] ?? 0} card{(cardCounts[language.id] ?? 0) === 1 ? "" : "s"}
-                            </Text>
+                            <View className="flex-row items-center">
+                                <Text className="text-blue-400 font-semibold text-sm">
+                                    {(dueCounts[language.id] ?? EMPTY_DUE_COUNTS).newCount}
+                                </Text>
+                                <Text className="text-purple-300/30 mx-1">/</Text>
+                                <Text className="text-red-400 font-semibold text-sm">
+                                    {(dueCounts[language.id] ?? EMPTY_DUE_COUNTS).learningCount}
+                                </Text>
+                                <Text className="text-purple-300/30 mx-1">/</Text>
+                                <Text className="text-green-400 font-semibold text-sm">
+                                    {(dueCounts[language.id] ?? EMPTY_DUE_COUNTS).reviewCount}
+                                </Text>
+                            </View>
                         </Pressable>
                     ))}
                 </ScrollView>

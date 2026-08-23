@@ -1,24 +1,40 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const DECK_KEY = "defaultDeck"
 const OPENAI_API_KEY = "none"
-const ANKI_ENABLED_KEY = "ankiEnabled"
 
-export async function updateDeckSetting(deckName:string) {
+const DECK_KEY_PREFIX = "defaultDeck_";
+const ANKI_ENABLED_KEY_PREFIX = "ankiEnabled_";
+// Anki settings used to be global (one deck/toggle for the whole app, back when only
+// Japanese existed). Migrated once into the per-language key on first read.
+const LEGACY_DECK_KEY = "defaultDeck";
+const LEGACY_ANKI_ENABLED_KEY = "ankiEnabled";
+const LEGACY_LANGUAGE_ID = "japanese";
+
+export async function updateDeckSetting(languageId: string, deckName: string) {
     try {
-        await AsyncStorage.setItem(DECK_KEY, deckName);
+        await AsyncStorage.setItem(DECK_KEY_PREFIX + languageId, deckName);
     } catch (error) {
         console.error("Failed To Save Deck Name", error);
     }
 }
 
-export async function loadDeckSetting() {
+export async function loadDeckSetting(languageId: string) {
     try {
-       const deckName = await AsyncStorage.getItem(DECK_KEY);
-       return deckName;
+        const storageKey = DECK_KEY_PREFIX + languageId;
+        let deckName = await AsyncStorage.getItem(storageKey);
+
+        if (deckName == null && languageId === LEGACY_LANGUAGE_ID) {
+            const legacyDeckName = await AsyncStorage.getItem(LEGACY_DECK_KEY);
+            if (legacyDeckName != null) {
+                await AsyncStorage.setItem(storageKey, legacyDeckName);
+                deckName = legacyDeckName;
+            }
+        }
+
+        return deckName;
     } catch (error) {
         console.error("Failed To Load Deck Name", error);
-        null;
+        return null;
     }
 }
 
@@ -40,18 +56,28 @@ export async function loadAPIKeySetting() {
     }
 }
 
-export async function updateAnkiEnabledSetting(enabled: boolean) {
+export async function updateAnkiEnabledSetting(languageId: string, enabled: boolean) {
     try {
-        await AsyncStorage.setItem(ANKI_ENABLED_KEY, enabled ? "true" : "false");
+        await AsyncStorage.setItem(ANKI_ENABLED_KEY_PREFIX + languageId, enabled ? "true" : "false");
     } catch (error) {
         console.error("Failed To Save Anki Enabled Setting", error);
     }
 }
 
-export async function loadAnkiEnabledSetting() {
+export async function loadAnkiEnabledSetting(languageId: string) {
     try {
-       const ankiEnabled = await AsyncStorage.getItem(ANKI_ENABLED_KEY);
-       return ankiEnabled === "true";
+        const storageKey = ANKI_ENABLED_KEY_PREFIX + languageId;
+        let ankiEnabled = await AsyncStorage.getItem(storageKey);
+
+        if (ankiEnabled == null && languageId === LEGACY_LANGUAGE_ID) {
+            const legacyAnkiEnabled = await AsyncStorage.getItem(LEGACY_ANKI_ENABLED_KEY);
+            if (legacyAnkiEnabled != null) {
+                await AsyncStorage.setItem(storageKey, legacyAnkiEnabled);
+                ankiEnabled = legacyAnkiEnabled;
+            }
+        }
+
+        return ankiEnabled === "true";
     } catch (error) {
         console.error("Failed To Load Anki Enabled Setting", error);
         return false;
