@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, Switch, Platform } from "react-native";
+import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, Switch, Platform, StyleSheet } from "react-native";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { loadDeckSetting, updateDeckSetting, loadAnkiEnabledSetting, updateAnkiEnabledSetting } from "~/utils/settingsManager";
 import { loadNewCardsPerDay, updateNewCardsPerDay, DEFAULT_NEW_CARDS_PER_DAY } from "~/utils/srsManager";
+import { colors, withOpacity } from "~/utils/colors";
 
 export default function LanguageSettingsScreen() {
     const route = useRoute();
@@ -67,7 +68,7 @@ export default function LanguageSettingsScreen() {
     if (loading) {
         return (
             <ScreenWrapper>
-                <View className="flex-1 items-center justify-center">
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <ActivityIndicator size={50} color={"#A855F7"} />
                 </View>
             </ScreenWrapper>
@@ -76,12 +77,12 @@ export default function LanguageSettingsScreen() {
 
     return (
         <ScreenWrapper>
-            <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: 40 }}>
-                <Text className="text-purple-300/50 text-lg mb-4">{languageLabel} Settings</Text>
+            <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 40 }}>
+                <Text style={styles.heading}>{languageLabel} Settings</Text>
 
-                <View className="mb-3">
-                    <View className="flex-row items-center">
-                        <Text className="text-white text-lg mr-2">New Cards Per Day</Text>
+                <View style={{ marginBottom: 12 }}>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>New Cards Per Day</Text>
                         <Pressable
                             onPress={() =>
                                 Alert.alert(
@@ -89,13 +90,14 @@ export default function LanguageSettingsScreen() {
                                     "The maximum number of brand-new cards introduced into your review queue each day for this language. Cards already due for review are not affected by this limit."
                                 )
                             }
-                            className="items-center"
+                            style={{ alignItems: 'center' }}
                         >
                             <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
                         </Pressable>
                     </View>
                     <TextInput
-                        className="bg-black border mb-2 shadow-lg shadow-purple-300 border-purple-800 my-1 rounded text-purple-300 placeholder:text-purple-300/50 p-2"
+                        style={styles.textInput}
+                        placeholderTextColor={withOpacity(colors.purple300, 0.5)}
                         value={settingForm.newCardsPerDay}
                         onChangeText={(text) => handleFormChange("newCardsPerDay", text.replace(/[^0-9]/g, ""))}
                         keyboardType="number-pad"
@@ -105,10 +107,10 @@ export default function LanguageSettingsScreen() {
 
                 {showAnkiSettings && (
                     <>
-                        <View className="mb-3">
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <Text className="text-white text-lg mr-2">Enable AnkiDroid Communication</Text>
+                        <View style={{ marginBottom: 12 }}>
+                            <View style={[styles.row, { justifyContent: 'space-between' }]}>
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Enable AnkiDroid Communication</Text>
                                     <Pressable
                                         onPress={() =>
                                             Alert.alert(
@@ -116,7 +118,7 @@ export default function LanguageSettingsScreen() {
                                                 "When enabled, cards can be sent directly to the AnkiDroid app on your device. Requires AnkiDroid to be installed."
                                             )
                                         }
-                                        className="items-center"
+                                        style={{ alignItems: 'center' }}
                                     >
                                         <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
                                     </Pressable>
@@ -131,9 +133,9 @@ export default function LanguageSettingsScreen() {
                         </View>
 
                         {settingForm.ankiEnabled && (
-                            <View className="mb-3">
-                                <View className="flex-row items-center">
-                                    <Text className="text-white text-lg mr-2">Anki Deck To Insert Into</Text>
+                            <View style={{ marginBottom: 12 }}>
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Anki Deck To Insert Into</Text>
                                     <Pressable
                                         onPress={() =>
                                             Alert.alert(
@@ -141,13 +143,14 @@ export default function LanguageSettingsScreen() {
                                                 "When send to anki is clicked this is the deck new cards will be inserted into. If no deck with the given name exists a new one will be made. If no text is entered here it will default to Umeboshi"
                                             )
                                         }
-                                        className="items-center"
+                                        style={{ alignItems: 'center' }}
                                     >
                                         <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
                                     </Pressable>
                                 </View>
                                 <TextInput
-                                    className="bg-black border mb-2 shadow-lg shadow-purple-300 border-purple-800 my-1 rounded text-purple-300 placeholder:text-purple-300/50 p-2"
+                                    style={styles.textInput}
+                                    placeholderTextColor={withOpacity(colors.purple300, 0.5)}
                                     value={settingForm.insertDeck}
                                     onChangeText={(text) => handleFormChange("insertDeck", text)}
                                     placeholder="Deck Name (Defaults to Umeboshi)"
@@ -160,11 +163,56 @@ export default function LanguageSettingsScreen() {
                 <Pressable
                     onPress={handleFormSubmit}
                     disabled={saving}
-                    className="border p-3 bg-purple-800 border-purple-600 rounded items-center mt-2"
+                    style={styles.saveButton}
                 >
-                    <Text className="text-white text-lg">{saving ? "Saving..." : "Save Settings"}</Text>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save Settings"}</Text>
                 </Pressable>
             </ScrollView>
         </ScreenWrapper>
     );
 }
+
+const styles = StyleSheet.create({
+    heading: {
+        color: withOpacity(colors.purple300, 0.5),
+        fontSize: 18,
+        marginBottom: 16,
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    label: {
+        color: colors.white,
+        fontSize: 18,
+        marginRight: 8,
+    },
+    textInput: {
+        backgroundColor: colors.black,
+        borderWidth: 1,
+        borderColor: colors.purple800,
+        marginVertical: 4,
+        marginBottom: 8,
+        borderRadius: 4,
+        color: colors.purple300,
+        padding: 8,
+        shadowColor: colors.purple300,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        elevation: 4,
+    },
+    saveButton: {
+        borderWidth: 1,
+        padding: 12,
+        backgroundColor: colors.purple800,
+        borderColor: colors.purple600,
+        borderRadius: 4,
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    saveButtonText: {
+        color: colors.white,
+        fontSize: 18,
+    },
+});

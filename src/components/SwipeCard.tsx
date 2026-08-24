@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import { Animated, PanResponder, View, Text, Pressable, Dimensions, StyleSheet } from "react-native";
 import FuriganaText from "~/components/FuriganaText";
 import { VocabCard as VocabWord, normalizeCard } from "~/utils/cardTypes";
@@ -43,13 +43,28 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
     const flipAnim = useRef(new Animated.Value(0)).current;
     const isFlippedRef = useRef(false);
 
+    // A freshly-created Animated.Value's interpolated style (opacity/rotateY here) isn't
+    // applied to the native view until an actual animation has run on it at least once —
+    // the new card mounts with a correctly measured frame but nothing paints until *any*
+    // animation starts on flipAnim. A real (if tiny) non-zero-duration no-op animation
+    // "wakes up" that binding immediately on mount.
+    useEffect(() => {
+        Animated.timing(flipAnim, { toValue: 0, duration: 1, useNativeDriver: false }).start();
+    }, []);
+
     function setFlipped(value: boolean) {
         isFlippedRef.current = value;
         onFlipChange?.(value);
+        // JS-driven rather than native: a freshly-mounted native-driven Animated.Value's
+        // initial interpolated style isn't always committed to the native view until an
+        // animation actually runs on it, which was making brand-new card instances (this
+        // component remounts per card via a changing `key`) render invisible until
+        // something else happened to kick the driver. JS-driven values are recomputed
+        // synchronously on every render, so this can't happen.
         Animated.timing(flipAnim, {
             toValue: value ? 1 : 0,
             duration: 350,
-            useNativeDriver: true,
+            useNativeDriver: false,
         }).start();
     }
 
@@ -144,7 +159,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
     const view = normalizeCard(vocabWord);
 
     return (
-        <Animated.View {...panResponder.panHandlers} style={[styles.card, cardStyle]}>
+        <Animated.View
+            {...panResponder.panHandlers}
+            style={[styles.card, cardStyle]}
+        >
             <Pressable style={{ flex: 1 }} onPress={() => setFlipped(!isFlippedRef.current)}>
                 <Animated.View style={[styles.stamp, styles.goodStamp, { opacity: goodOpacity }]}>
                     <Text style={styles.stampKanjiGood}>正</Text>
@@ -216,12 +234,11 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
 export default SwipeCard;
 
 const styles = StyleSheet.create({
+    // Plain flex fill rather than position:absolute + edges:0 — the parent (ReviewScreen's
+    // wrapper View) only ever holds this one child, so there's no need to take it out of
+    // flow at all.
     card: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        flex: 1,
     },
     cardFace: {
         position: "absolute",

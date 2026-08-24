@@ -1,8 +1,7 @@
 
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
-import { Pressable, NativeModules, Alert, Platform } from 'react-native';
-import './global.css';
+import { Pressable, NativeModules, Alert, Platform, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import JapaneseHomeScreen from '~/screens/JapaneseHomeScreen';
@@ -17,6 +16,7 @@ import { loadAnkiEnabledSetting } from '~/utils/settingsManager';
 import CardListScreen from '~/screens/CardListScreen';
 import CardEditScreen from '~/screens/CardEditScreen';
 import ReviewScreen from '~/screens/ReviewScreen';
+import ExtraReviewScreen from '~/screens/ExtraReviewScreen';
 import { useEffect, createContext, useState } from 'react';
 import Purchases from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -66,6 +66,12 @@ export default function App() {
     }, [])
 
     useEffect(() => {
+        // RevenueCat, the subscription entitlement check, and the free-tier device quota
+        // system are all bypassed on iOS for now — RevenueCat isn't configured for the iOS
+        // app yet, and both getAppUserID() and the device-quota lookup depend on it being
+        // configured. iOS users run purely on their own OpenAI API key until this is set up.
+        if (Platform.OS !== 'android') return;
+
         (async () => {
             try {
                 await Purchases.configure({ apiKey: 'goog_YzOjiXxynASmcCsZxbWZrwrQQtQ' });
@@ -76,6 +82,8 @@ export default function App() {
     }, [])
 
     useEffect(() => {
+        if (Platform.OS !== 'android') return;
+
         const setUpUserData = async () => {
             try {
                 const appUserId = await Purchases.getAppUserID();
@@ -105,9 +113,7 @@ export default function App() {
 
     return (
         <AppContext.Provider value={{ userData, setUserData }}>
-            <SafeAreaView className='flex-1 bg-black' edges={["bottom", "left", "right"]}>
-
-
+            <SafeAreaView style={styles.root} edges={["bottom", "left", "right"]}>
                 <NavigationContainer>
                     <Stack.Navigator
                         screenOptions={({ route, navigation }) => ({
@@ -209,6 +215,20 @@ export default function App() {
                         />
 
                         <Stack.Screen
+                            name='Extra Review'
+                            component={ExtraReviewScreen}
+                            options={({ route }) => {
+                                const params = route.params as { languageLabel?: string; mode?: "random" | "forgotten" } | undefined;
+                                const modeTitle = params?.mode === "forgotten" ? "Forgotten Cards" : "Random Review";
+                                return {
+                                    title: `${params?.languageLabel ?? ""} ${modeTitle}`.trim(),
+                                    headerStyle: { backgroundColor: "#050505" },
+                                    headerTintColor: "#fff",
+                                };
+                            }}
+                        />
+
+                        <Stack.Screen
                             name='Add Words'
                             component={AddWordsScreen}
                             options={({ route }) => ({
@@ -223,3 +243,10 @@ export default function App() {
         </AppContext.Provider>
     );
 }
+
+const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+        backgroundColor: '#000000',
+    },
+});

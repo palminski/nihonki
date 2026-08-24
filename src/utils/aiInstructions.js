@@ -178,7 +178,7 @@ Required Output Fields:
 ${languageLabel} learner rules:
 - If the provided word is slang, casual, or affectionate, DO NOT replace it with a more standard or dictionary form.
 - Always treat the given surface form as its own entry. Preserve its nuance (casual, affectionate, childish, etc.) in meaning and example sentences.
-- Prefer the most natural English gloss a learner would expect.
+- The meaning field must be ONLY a short English translation/gloss of the word (e.g. "mother", "to run", "hello") — a few words at most. NEVER write a dictionary-style definition or explanation, and NEVER write it in ${languageLabel} — it must always be in English.
 - The exampleSentence must be written entirely in ${languageLabel}, with <b></b> wrapping only the target word or phrase.
 - Avoid vulgar/slang meanings unless explicitly requested.
 - Example sentences must be appropriate for general learners (no sexual or offensive content).`;
@@ -202,6 +202,7 @@ Rules:
 - Always treat the given surface form as its own entry. Preserve its nuance (casual, affectionate, childish, etc.) in meaning and example sentences.
 - Sentences must be original and show natural, real-world usage.
 - Do not repeat the word alone or use dictionary-style definitions as examples.
+- The meaning field must be ONLY a short English translation/gloss (e.g. "mother", "to run") — never a dictionary-style definition, and never written in ${languageLabel}.
 - The exampleSentence must be entirely in ${languageLabel}, with <b></b> wrapping only the target word or phrase.`;
 }
 
@@ -245,7 +246,7 @@ ${languageLabel} learner rules:
 - Romanize using ${romanizationSystem}.
 - If the provided word is slang, casual, or affectionate, DO NOT replace it with a more standard or dictionary form.
 - Always treat the given surface form as its own entry. Preserve its nuance (casual, affectionate, childish, etc.) in meaning and example sentences.
-- Prefer the most natural English gloss a learner would expect.
+- The meaning field must be ONLY a short English translation/gloss of the word (e.g. "mother", "to run", "hello") — a few words at most. NEVER write a dictionary-style definition or explanation, and NEVER write it in ${languageLabel} — it must always be in English.
 - The exampleSentence must be written entirely in ${languageLabel} script, with <b></b> wrapping only the target word or phrase.
 - The exampleSentencePronunciation must be the exact same sentence, character-for-character, with every character individually annotated with its romanization in brackets, and <b></b> wrapping the same target word or phrase (each bracketed character inside the wrapped span keeps its own brackets).
 - Avoid vulgar/slang meanings unless explicitly requested.
@@ -273,5 +274,6 @@ Rules:
 - Always treat the given surface form as its own entry. Preserve its nuance (casual, affectionate, childish, etc.) in meaning and example sentences.
 - Sentences must be original and show natural, real-world usage.
 - Do not repeat the word alone or use dictionary-style definitions as examples.
+- The meaning field must be ONLY a short English translation/gloss (e.g. "mother", "hello") — never a dictionary-style definition, and never written in ${languageLabel}.
 - The exampleSentence must contain no romanization at all; exampleSentencePronunciation must be the identical sentence with every character bracketed.`;
 }

@@ -1,8 +1,15 @@
 import Purchases from "react-native-purchases";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import axios from "axios";
 
+// RevenueCat is only configured on Android for now (see App.tsx) — every function here
+// bails out safely on other platforms instead of touching an unconfigured native SDK.
+function isRevenueCatAvailable() {
+    return Platform.OS === 'android';
+}
+
 export async function promptUserSubscription(): Promise<boolean> {
+    if (!isRevenueCatAvailable()) return false;
     try {
         const offerings = await Purchases.getOfferings();
         if (!offerings.current) {
@@ -41,6 +48,7 @@ export async function promptUserSubscription(): Promise<boolean> {
 }
 
 export async function attemptToResoreSubscription(): Promise<boolean> {
+    if (!isRevenueCatAvailable()) return false;
     try {
         const info = await Purchases.restorePurchases();
 
@@ -60,6 +68,7 @@ export async function attemptToResoreSubscription(): Promise<boolean> {
 }
 
 export async function getIsUserSubscribed() {
+    if (!isRevenueCatAvailable()) return false;
     const subscriptionInfo = await Purchases.getCustomerInfo();
     if (!subscriptionInfo.entitlements.active["api_key_access"]) {
         return false;

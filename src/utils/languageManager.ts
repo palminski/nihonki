@@ -6,20 +6,21 @@ export interface Language {
     label: string;
     nativeLabel: string;
     icon: keyof typeof Ionicons.glyphMap;
+    flagEmoji: string;
 }
 
 export const LANGUAGE_CATALOG: Language[] = [
-    { id: "japanese", label: "Japanese", nativeLabel: "日本語", icon: "language" },
-    { id: "spanish", label: "Spanish", nativeLabel: "Español", icon: "language" },
-    { id: "french", label: "French", nativeLabel: "Français", icon: "language" },
-    { id: "korean", label: "Korean", nativeLabel: "한국어", icon: "language" },
-    { id: "mandarin", label: "Mandarin", nativeLabel: "中文", icon: "language" },
-    { id: "cantonese", label: "Cantonese", nativeLabel: "廣東話", icon: "language" },
-    { id: "german", label: "German", nativeLabel: "Deutsch", icon: "language" },
-    { id: "italian", label: "Italian", nativeLabel: "Italiano", icon: "language" },
-    { id: "portuguese", label: "Portuguese", nativeLabel: "Português", icon: "language" },
-    { id: "russian", label: "Russian", nativeLabel: "Русский", icon: "language" },
-    { id: "dutch", label: "Dutch", nativeLabel: "Nederlands", icon: "language" },
+    { id: "japanese", label: "Japanese", nativeLabel: "日本語", icon: "language", flagEmoji: "🇯🇵" },
+    { id: "spanish", label: "Spanish", nativeLabel: "Español", icon: "language", flagEmoji: "🇪🇸" },
+    { id: "french", label: "French", nativeLabel: "Français", icon: "language", flagEmoji: "🇫🇷" },
+    { id: "korean", label: "Korean", nativeLabel: "한국어", icon: "language", flagEmoji: "🇰🇷" },
+    { id: "mandarin", label: "Mandarin", nativeLabel: "中文", icon: "language", flagEmoji: "🇨🇳" },
+    { id: "cantonese", label: "Cantonese", nativeLabel: "廣東話", icon: "language", flagEmoji: "🇭🇰" },
+    { id: "german", label: "German", nativeLabel: "Deutsch", icon: "language", flagEmoji: "🇩🇪" },
+    { id: "italian", label: "Italian", nativeLabel: "Italiano", icon: "language", flagEmoji: "🇮🇹" },
+    { id: "portuguese", label: "Portuguese", nativeLabel: "Português", icon: "language", flagEmoji: "🇵🇹" },
+    { id: "russian", label: "Russian", nativeLabel: "Русский", icon: "language", flagEmoji: "🇷🇺" },
+    { id: "dutch", label: "Dutch", nativeLabel: "Nederlands", icon: "language", flagEmoji: "🇳🇱" },
 ];
 
 const ENABLED_LANGUAGES_KEY = "enabledLanguages";

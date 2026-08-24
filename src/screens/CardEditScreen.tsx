@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, Alert } from "react-native";
+import { View, Text, TextInput, ScrollView, Pressable, Alert, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { removeCardFromReviewDeck, addCardToReviewDeck } from "~/utils/deckManager";
 import { JAPANESE_CARD_FIELDS, ROMANIZED_CARD_FIELDS, SIMPLE_CARD_FIELDS, isJapaneseCard, isRomanizedCard, VocabCard } from "~/utils/cardTypes";
+import { colors } from "~/utils/colors";
 
 export default function CardEditScreen() {
     const navigation = useNavigation();
@@ -64,12 +65,12 @@ export default function CardEditScreen() {
 
     return (
         <ScreenWrapper>
-            <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: 40 }}>
+            <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 40 }}>
                 {FIELDS.map((field) => (
-                    <View key={field.key} className="mb-3">
-                        <Text className="text-white text-base mb-1">{field.label}</Text>
+                    <View key={field.key} style={{ marginBottom: 12 }}>
+                        <Text style={styles.fieldLabel}>{field.label}</Text>
                         <TextInput
-                            className="bg-black border border-purple-800 rounded text-purple-300 p-2"
+                            style={styles.textInput}
                             value={form[field.key]}
                             onChangeText={(text) => handleChange(field.key, text)}
                             multiline={field.multiline}
@@ -80,19 +81,61 @@ export default function CardEditScreen() {
                 <Pressable
                     onPress={handleSave}
                     disabled={saving}
-                    className="border p-3 bg-purple-800 border-purple-600 rounded items-center mt-2"
+                    style={styles.saveButton}
                 >
-                    <Text className="text-white text-lg">{saving ? "Saving..." : "Save Card"}</Text>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save Card"}</Text>
                 </Pressable>
 
                 <Pressable
                     onPress={handleDelete}
                     disabled={saving}
-                    className="border p-3 border-red-800 bg-black rounded items-center mt-3"
+                    style={styles.deleteButton}
                 >
-                    <Text className="text-red-400 text-lg">Delete Card</Text>
+                    <Text style={styles.deleteButtonText}>Delete Card</Text>
                 </Pressable>
             </ScrollView>
         </ScreenWrapper>
     );
 }
+
+const styles = StyleSheet.create({
+    fieldLabel: {
+        color: colors.white,
+        fontSize: 16,
+        marginBottom: 4,
+    },
+    textInput: {
+        backgroundColor: colors.black,
+        borderWidth: 1,
+        borderColor: colors.purple800,
+        borderRadius: 4,
+        color: colors.purple300,
+        padding: 8,
+    },
+    saveButton: {
+        borderWidth: 1,
+        padding: 12,
+        backgroundColor: colors.purple800,
+        borderColor: colors.purple600,
+        borderRadius: 4,
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    saveButtonText: {
+        color: colors.white,
+        fontSize: 18,
+    },
+    deleteButton: {
+        borderWidth: 1,
+        padding: 12,
+        borderColor: colors.red800,
+        backgroundColor: colors.black,
+        borderRadius: 4,
+        alignItems: 'center',
+        marginTop: 12,
+    },
+    deleteButtonText: {
+        color: colors.red400,
+        fontSize: 18,
+    },
+});

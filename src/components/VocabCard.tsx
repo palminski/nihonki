@@ -1,4 +1,4 @@
-import { View, Text, Pressable, NativeModules, Alert, Platform } from "react-native";
+import { View, Text, Pressable, NativeModules, Alert, Platform, StyleSheet } from "react-native";
 import { useState } from "react";
 import { useEffect, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { loadDeckSetting, loadAnkiEnabledSetting } from "~/utils/settingsManager";
 import { addCardToReviewDeck, isCardInReviewDeck } from "~/utils/deckManager";
 import { VocabCard as VocabCardData, isJapaneseCard, isRomanizedCard } from "~/utils/cardTypes";
+import { colors } from "~/utils/colors";
 
 interface VocabCardProps {
     vocabWord: VocabCardData
@@ -70,42 +71,42 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
     const exampleSentence = isJapaneseCard(vocabWord) ? vocabWord.exampleSentenceKanji : vocabWord.exampleSentence;
 
     return (
-        <View className="my-2 shadow-lg shadow-purple-800 border border-purple-500 p-3 bg-purple-950  rounded">
-            <View className="flex flex-row justify-between items-end ">
-                <Pressable onPress={() => setIsOpen(!isOpen)} className="flex-1 mr-2">
-                    <Text className="text-purple-300 mb-1">
-                        <Text className="text-2xl text-purple-200">{headword}</Text> - <Text className="text text-purple-200">[ {subheading} ] {isOpen ? "▼" : "▲"}</Text>
+        <View style={styles.card}>
+            <View style={styles.headerRow}>
+                <Pressable onPress={() => setIsOpen(!isOpen)} style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.headwordLine}>
+                        <Text style={styles.headword}>{headword}</Text> - <Text style={styles.headword}>[ {subheading} ] {isOpen ? "▼" : "▲"}</Text>
                     </Text>
-                    <Text className=" text-purple-300 text-sm">
+                    <Text style={styles.meaningText}>
                         {vocabWord.meaning}
                     </Text>
                 </Pressable>
-                <View className="items-end">
+                <View style={{ alignItems: 'flex-end' }}>
                     {
                         !isInDeck ?
-                            <Pressable onPress={() => handleAddToDeck(vocabWord)} className="border p-2 bg-purple-800 border-purple-600 rounded flex-row items-center">
-                                <Text className=" text-white">Add to Deck</Text>
-                                <Ionicons className="ml-2" name="albums-outline" size={12} color={"#fff"} />
+                            <Pressable onPress={() => handleAddToDeck(vocabWord)} style={styles.actionButton}>
+                                <Text style={styles.actionButtonText}>Add to Deck</Text>
+                                <Ionicons style={{ marginLeft: 8 }} name="albums-outline" size={12} color={"#fff"} />
                             </Pressable>
                             :
-                            <Pressable className="border p-2 border-purple-800 bg-purple-950 rounded flex-row items-center">
-                                <Text className=" text-purple-400">In Deck!</Text>
-                                <Ionicons className="ml-2" name="checkmark-outline" size={12} color={"#C084FC"} />
+                            <Pressable style={styles.doneButton}>
+                                <Text style={styles.doneButtonText}>In Deck!</Text>
+                                <Ionicons style={{ marginLeft: 8 }} name="checkmark-outline" size={12} color={"#C084FC"} />
                             </Pressable>
                     }
                     {
                         Platform.OS === "android" && isAnkiEnabled && isJapanese &&
-                        <View className="mt-2">
+                        <View style={{ marginTop: 8 }}>
                             {
                                 !isAdded ?
-                                    <Pressable onPress={() => handleSendToAnki(vocabWord)} className="border p-2 bg-purple-800 border-purple-600 rounded flex-row items-center">
-                                        <Text className=" text-white">Send to Anki</Text>
-                                        <Ionicons className="ml-2" name="send-outline" size={12} color={"#fff"} />
+                                    <Pressable onPress={() => handleSendToAnki(vocabWord)} style={styles.actionButton}>
+                                        <Text style={styles.actionButtonText}>Send to Anki</Text>
+                                        <Ionicons style={{ marginLeft: 8 }} name="send-outline" size={12} color={"#fff"} />
                                     </Pressable>
                                     :
-                                    <Pressable className="border p-2 border-purple-800 bg-purple-950 rounded flex-row items-center">
-                                        <Text className=" text-purple-400">Card Added!</Text>
-                                        <Ionicons className="ml-2" name="checkmark-outline" size={12} color={"#C084FC"} />
+                                    <Pressable style={styles.doneButton}>
+                                        <Text style={styles.doneButtonText}>Card Added!</Text>
+                                        <Ionicons style={{ marginLeft: 8 }} name="checkmark-outline" size={12} color={"#C084FC"} />
                                     </Pressable>
                             }
                         </View>
@@ -115,30 +116,28 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
             {
                 isOpen &&
                 <>
-                    <View
-                        className="my-3"
-                    />
-                    <View className="mb-2">
+                    <View style={{ marginVertical: 12 }} />
+                    <View style={{ marginBottom: 8 }}>
                         {isJapaneseCard(vocabWord) ? (
                             <>
-                                <Text className="text-purple-300"><Text className="font-semibold">Kanji: </Text>{vocabWord.kanji}</Text>
-                                <Text className="text-purple-300"><Text className="font-semibold">Reading: </Text>{vocabWord.kana}</Text>
+                                <Text style={styles.detailText}><Text style={styles.detailLabel}>Kanji: </Text>{vocabWord.kanji}</Text>
+                                <Text style={styles.detailText}><Text style={styles.detailLabel}>Reading: </Text>{vocabWord.kana}</Text>
                             </>
                         ) : isRomanizedCard(vocabWord) ? (
                             <>
-                                <Text className="text-purple-300"><Text className="font-semibold">Word: </Text>{vocabWord.word}</Text>
-                                <Text className="text-purple-300"><Text className="font-semibold">Pronunciation: </Text>{vocabWord.pronunciation}</Text>
+                                <Text style={styles.detailText}><Text style={styles.detailLabel}>Word: </Text>{vocabWord.word}</Text>
+                                <Text style={styles.detailText}><Text style={styles.detailLabel}>Pronunciation: </Text>{vocabWord.pronunciation}</Text>
                             </>
                         ) : (
-                            <Text className="text-purple-300"><Text className="font-semibold">Word: </Text>{vocabWord.word}</Text>
+                            <Text style={styles.detailText}><Text style={styles.detailLabel}>Word: </Text>{vocabWord.word}</Text>
                         )}
-                        <Text className="text-purple-300"><Text className="font-semibold">Definition: </Text>{vocabWord.meaning}</Text>
-                        <Text className="text-purple-300"><Text className="font-semibold">Part of Speach: </Text>{vocabWord.partOfSpeech}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Definition: </Text>{vocabWord.meaning}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Part of Speach: </Text>{vocabWord.partOfSpeech}</Text>
                     </View>
-                    <View className="">
-                        <Text className="font-semibold text-purple-300 underline">Example Sentence: </Text>
-                        <Text className="text-purple-300">{exampleSentence.replace("<b>", "").replace("</b>", "").replace("<span>", "").replace("</span>", "")}</Text>
-                        <Text className="text-purple-300">{vocabWord.exampleSentenceEnglish}</Text>
+                    <View>
+                        <Text style={styles.exampleLabel}>Example Sentence: </Text>
+                        <Text style={styles.detailText}>{exampleSentence.replace("<b>", "").replace("</b>", "").replace("<span>", "").replace("</span>", "")}</Text>
+                        <Text style={styles.detailText}>{vocabWord.exampleSentenceEnglish}</Text>
                     </View>
                 </>
             }
@@ -148,3 +147,71 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
 
     )
 }
+
+const styles = StyleSheet.create({
+    card: {
+        marginVertical: 8,
+        shadowColor: colors.purple800,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 15,
+        elevation: 6,
+        borderWidth: 1,
+        borderColor: colors.purple500,
+        padding: 12,
+        backgroundColor: colors.purple950,
+        borderRadius: 4,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+    },
+    headwordLine: {
+        color: colors.purple300,
+        marginBottom: 4,
+    },
+    headword: {
+        fontSize: 24,
+        color: '#e9d5ff',
+    },
+    meaningText: {
+        color: colors.purple300,
+        fontSize: 14,
+    },
+    actionButton: {
+        borderWidth: 1,
+        padding: 8,
+        backgroundColor: colors.purple800,
+        borderColor: colors.purple600,
+        borderRadius: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    actionButtonText: {
+        color: colors.white,
+    },
+    doneButton: {
+        borderWidth: 1,
+        padding: 8,
+        borderColor: colors.purple800,
+        backgroundColor: colors.purple950,
+        borderRadius: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    doneButtonText: {
+        color: colors.purple400,
+    },
+    detailText: {
+        color: colors.purple300,
+    },
+    detailLabel: {
+        fontWeight: '600',
+    },
+    exampleLabel: {
+        fontWeight: '600',
+        color: colors.purple300,
+        textDecorationLine: 'underline',
+    },
+});

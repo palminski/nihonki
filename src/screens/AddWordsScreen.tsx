@@ -1,10 +1,9 @@
-import { View, Text, Pressable, Alert, Image, ScrollView, NativeModules, TextInput, ActivityIndicator, ImageBackground } from "react-native";
+import { View, Text, Pressable, Alert, Image, ScrollView, NativeModules, TextInput, ActivityIndicator, ImageBackground, Platform, StyleSheet } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState, useRef, useEffect, useContext, useCallback } from "react";
 import { loadAPIKeySetting } from "~/utils/settingsManager";
 import { Ionicons } from "@expo/vector-icons";
-import LinearGradient from "react-native-linear-gradient";
 import { NavigationProp, useFocusEffect, useRoute } from "@react-navigation/native";
 import VocabCard from "~/components/VocabCard";
 import ImageView from "react-native-image-viewing";
@@ -16,6 +15,12 @@ import { getRequiredCardFields, getCardShape, getRomanizationSystem } from "~/ut
 import { getCardKey } from "~/utils/deckManager";
 import { AppContext } from "App";
 import UmeboshiChan from "../assets/UmeboshiChan.svg";
+import { colors, withOpacity } from "~/utils/colors";
+
+// Subscriptions aren't wired up on iOS yet, so don't point users at an option that isn't there.
+const SETUP_REQUIRED_MESSAGE = Platform.OS === 'android'
+    ? "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key."
+    : "To start making cards please go to settings and provide an OpenAI API key.";
 
 export default function AddWordsScreen({ navigation }: { navigation: NavigationProp<any> }) {
     const route = useRoute();
@@ -63,7 +68,7 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
 
         const key = await loadAPIKeySetting();
         if (userData.imagesRemaining <= 0 && !await getIsUserSubscribed() && (key == null || key == "")) {
-            Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
+            Alert.alert("Setup Required", SETUP_REQUIRED_MESSAGE)
             return;
         }
 
@@ -161,7 +166,7 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
 
         const key = await loadAPIKeySetting();
         if (userData.wordsRemaining <= 0 && !await getIsUserSubscribed() && (key == null || key == "")) {
-            Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
+            Alert.alert("Setup Required", SETUP_REQUIRED_MESSAGE)
             return;
         }
 
@@ -253,7 +258,7 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
     const handleEnterText = async () => {
         const key = await loadAPIKeySetting();
         if (userData.wordsRemaining <= 0 && !await getIsUserSubscribed() && (key == null || key == "")) {
-            Alert.alert("Setup Required", "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.")
+            Alert.alert("Setup Required", SETUP_REQUIRED_MESSAGE)
             return;
         }
         setIsPictureMode(false);
@@ -276,20 +281,19 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
 
     return (
         <ScreenWrapper>
-            <View className="flex-1 ">
+            <View style={{ flex: 1 }}>
 
                 <ScrollView
                     style={{ flex: 1, zIndex: 15 }}
-                    contentContainerStyle={{ paddingBottom: 20 }}
+                    contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
                     showsVerticalScrollIndicator={false}
-                    className="p-4"
                 >
 
                     {/* INPUT AND STATUS BOX */}
                     {
                         isPictureMode ?
-                            <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
-                                <ScrollView horizontal className="">
+                            <View style={styles.inputBox}>
+                                <ScrollView horizontal>
                                     {
                                         snappedImages.length > 0 ?
                                             snappedImages.map((image, index) => (
@@ -299,7 +303,7 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                                                 </Pressable>
                                             ))
                                             :
-                                            <Text className="text-purple-400/50 text-lg mt-auto  pl-3 pb-2">Scanned Images Will Appear Here...</Text>
+                                            <Text style={styles.placeholderText}>Scanned Images Will Appear Here...</Text>
                                     }
                                     <ImageView
                                         images={snappedImages}
@@ -310,12 +314,20 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                                 </ScrollView>
                             </View>
                             :
-                            <View className="flex flex-row bg-black rounded min-h-[100px] border mb-2 shadow-lg shadow-purple-300 border-purple-800">
-                                <View className="border border-r-purple-600 w-full flex flex-row">
-                                    <TextInput onSubmitEditing={() => handleTextSubmit(inputText)} ref={textInputRef} className='border text-lg text-purple-300 placeholder:text-purple-300/50 rounded m-2 flex-1' value={inputText} onChangeText={(text) => HandleFormChange(text)} placeholder='言葉こちら' />
-                                    <View className="flex justify-end">
-                                        <Pressable onPress={() => handleTextSubmit(inputText)} className="m-2 border p-2 bg-purple-800 border-purple-600 rounded flex-row items-center">
-                                            <Text className=" text-white">Submit</Text>
+                            <View style={styles.inputBox}>
+                                <View style={styles.textEntryRow}>
+                                    <TextInput
+                                        onSubmitEditing={() => handleTextSubmit(inputText)}
+                                        ref={textInputRef}
+                                        style={styles.textEntryInput}
+                                        placeholderTextColor={withOpacity(colors.purple300, 0.5)}
+                                        value={inputText}
+                                        onChangeText={(text) => HandleFormChange(text)}
+                                        placeholder='言葉こちら'
+                                    />
+                                    <View style={{ justifyContent: 'flex-end' }}>
+                                        <Pressable onPress={() => handleTextSubmit(inputText)} style={styles.submitButton}>
+                                            <Text style={{ color: colors.white }}>Submit</Text>
                                         </Pressable>
                                     </View>
                                 </View>
@@ -326,21 +338,21 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                     {
 
                         Object.entries(currentRequests).map(([key, value]) => (
-                            <View key={key} className="my-2  shadow-purple-800 border border-purple-300 p-3 bg-black/20  rounded">
-                                <View className="flex flex-row justify-start items-center ">
+                            <View key={key} style={styles.requestCard}>
+                                <View style={styles.requestCardRow}>
                                     <View>
                                         <ActivityIndicator size={50} color={'#A855F7'} />
                                     </View>
-                                    <View className="mx-auto">
+                                    <View style={{ marginHorizontal: 'auto' }}>
                                         {
                                             value === "text" ?
-                                                <Text className="text-purple-300 text-lg">Loading Request For <Text className="font-semibold">{key}</Text></Text>
+                                                <Text style={styles.requestText}>Loading Request For <Text style={{ fontWeight: '600' }}>{key}</Text></Text>
                                                 :
-                                                <Text className="text-purple-300 text-lg">Loading Image</Text>
+                                                <Text style={styles.requestText}>Loading Image</Text>
                                         }
                                     </View>
                                     {
-                                        (value !== "text") && <Image className="rounded border border-purple-800" source={{ uri: value }} style={{ width: 100, height: 100 }} />
+                                        (value !== "text") && <Image style={styles.requestImage} source={{ uri: value }} />
                                     }
 
                                 </View>
@@ -362,63 +374,42 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                             </>
                             :
                             <View>
-                                <Text className="mt-6 text-xl font-semibold text-purple-300/50 mx-auto">Translated Words Will Appear Here</Text>
+                                <Text style={styles.emptyStateText}>Translated Words Will Appear Here</Text>
                             </View>
                     }
 
-                    {/* Comment In To See Test Vocab Card */}
-                    {/* <View className="my-2 shadow-lg shadow-purple-800 border border-purple-500 p-3 bg-purple-950  rounded">
-                        <View className="flex flex-row justify-between items-end ">
-                            <Pressable className="flex-1 mr-2">
-                                <Text className="text-purple-300 mb-1">
-                                    <Text className="text-2xl text-purple-200">TEST CARD</Text> - <Text className="text text-purple-200">[ TEST CARD ]</Text>
-                                </Text>
-                                <Text className=" text-purple-300 text-sm">
-                                    TEST CARD
-                                </Text>
-                            </Pressable>
-                        </View>
-                    </View> */}
-
-
                 </ScrollView>
-                {/* <Image source={require("../assets/UmeboshiChan2.png")} style={{ width: 200, height: 200, opacity: 0.5, position: "absolute", bottom: 0, zIndex:10 }} /> */}
-                <UmeboshiChan width={200} height={200} style={{position: "absolute", bottom: 0, left:15, zIndex:10}}></UmeboshiChan>
-
-                <LinearGradient
-                    style={{ position: 'absolute', bottom: 0, width: "100%", height: 50, zIndex: 20 }}
-                    colors={['#52525200', '#000000']}
-                    pointerEvents={'none'}
-                />
+                <UmeboshiChan width={200} height={200} style={{ position: "absolute", bottom: 0, left: 15, zIndex: 10 }}></UmeboshiChan>
 
             </View>
             {/* Bottom Menu */}
-            <View className="relative bg-transparent">
-                <View className="flex-row justify-around items-end py-1 bg-[#000000]">
+            <View style={{ backgroundColor: 'transparent' }}>
+                <View style={styles.bottomBar}>
+
                     {isJapanese &&
-                        <View className="items-center w-1/2 relative">
-                            <Pressable onPress={handleOpenCamera} className="">
+                        <View style={styles.bottomBarButton}>
+                            <Pressable onPress={handleOpenCamera}>
                                 <Ionicons name="camera" size={50} color={"#fff"} />
                                 {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
-                                    <View className="absolute -top-1 -right-3 bg-purple-400 rounded-full w-7 h-7 items-center justify-center shadow">
-                                        <Text className="font-bold">{userData.imagesRemaining}</Text>
+                                    <View style={[styles.badge, { top: -4, right: -12, width: 28, height: 28 }]}>
+                                        <Text style={styles.badgeText}>{userData.imagesRemaining}</Text>
                                     </View>
                                 }
 
                             </Pressable>
-                            <Text className="text-white text-xs mt-1">Scan Text</Text>
+                            <Text style={styles.bottomBarLabel}>Scan Text</Text>
                         </View>
                     }
-                    <View className={isJapanese ? "items-center w-1/2 relative" : "items-center w-full relative"}>
+                    <View style={isJapanese ? styles.bottomBarButton : [styles.bottomBarButton, { width: '100%' }]}>
                         <Pressable onPress={handleEnterText}>
                             <Ionicons name="create-outline" size={30} color={"#fff"} />
                             {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
-                                <View className="absolute -top-1 -right-2 bg-purple-400 rounded-full w-5 h-5 items-center justify-center shadow">
-                                    <Text className="font-bold text-sm">{userData.wordsRemaining}</Text>
+                                <View style={[styles.badge, { top: -4, right: -8, width: 20, height: 20 }]}>
+                                    <Text style={[styles.badgeText, { fontSize: 14 }]}>{userData.wordsRemaining}</Text>
                                 </View>
                             }
                         </Pressable>
-                        <Text className="text-white text-xs mt-1">Enter Word</Text>
+                        <Text style={styles.bottomBarLabel}>Enter Word</Text>
                     </View>
                 </View>
             </View>
@@ -426,3 +417,121 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
         </ScreenWrapper>
     )
 }
+
+const styles = StyleSheet.create({
+    inputBox: {
+        flexDirection: 'row',
+        backgroundColor: colors.black,
+        borderRadius: 4,
+        minHeight: 100,
+        borderWidth: 1,
+        borderColor: colors.purple800,
+        marginBottom: 8,
+        shadowColor: colors.purple300,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        elevation: 4,
+    },
+    placeholderText: {
+        color: withOpacity(colors.purple400, 0.5),
+        fontSize: 18,
+        marginTop: 'auto',
+        paddingLeft: 12,
+        paddingBottom: 8,
+    },
+    textEntryRow: {
+        borderWidth: 1,
+        borderRightColor: colors.purple600,
+        width: '100%',
+        flexDirection: 'row',
+    },
+    textEntryInput: {
+        borderWidth: 1,
+        borderColor: 'transparent',
+        fontSize: 18,
+        color: colors.purple300,
+        borderRadius: 4,
+        margin: 8,
+        flex: 1,
+    },
+    submitButton: {
+        margin: 8,
+        borderWidth: 1,
+        padding: 8,
+        backgroundColor: colors.purple800,
+        borderColor: colors.purple600,
+        borderRadius: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    requestCard: {
+        marginVertical: 8,
+        shadowColor: colors.purple800,
+        borderWidth: 1,
+        borderColor: colors.purple300,
+        padding: 12,
+        backgroundColor: withOpacity(colors.black, 0.2),
+        borderRadius: 4,
+    },
+    requestCardRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+    },
+    requestText: {
+        color: colors.purple300,
+        fontSize: 18,
+    },
+    requestImage: {
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: colors.purple800,
+        width: 100,
+        height: 100,
+    },
+    emptyStateText: {
+        marginTop: 24,
+        fontSize: 20,
+        fontWeight: '600',
+        color: withOpacity(colors.purple300, 0.5),
+        marginHorizontal: 'auto',
+    },
+    bottomBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'flex-end',
+        paddingVertical: 4,
+        backgroundColor: colors.black,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
+        elevation: 12,
+    },
+    bottomBarButton: {
+        alignItems: 'center',
+        width: '50%',
+        position: 'relative',
+    },
+    bottomBarLabel: {
+        color: colors.white,
+        fontSize: 12,
+        marginTop: 4,
+    },
+    badge: {
+        position: 'absolute',
+        backgroundColor: colors.purple400,
+        borderRadius: 9999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    badgeText: {
+        fontWeight: 'bold',
+    },
+});

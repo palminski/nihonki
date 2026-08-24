@@ -58,6 +58,49 @@ async function incrementNewCardsIntroducedToday(languageId: string) {
     }
 }
 
+async function decrementNewCardsIntroducedToday(languageId: string) {
+    try {
+        const current = await loadNewCardsIntroducedToday(languageId);
+        await AsyncStorage.setItem(
+            NEW_CARDS_TODAY_KEY_PREFIX + languageId,
+            JSON.stringify({ date: todayKey(), count: Math.max(0, current - 1) })
+        );
+    } catch (error) {
+        console.error("Failed To Save New Cards Introduced Today", error);
+    }
+}
+
+const MISSED_TODAY_KEY_PREFIX = "missedToday_";
+
+// Log of card keys graded "Again" at least once today — separate from FSRS state, since
+// by the time a session reaches "all done," every in-progress card has already been
+// re-shown until it graduated, so there's nothing left to filter for by current state.
+// This is purely for the optional "Review Forgotten Cards" extra-practice collection.
+async function loadMissedTodayKeys(languageId: string): Promise<string[]> {
+    try {
+        const json = await AsyncStorage.getItem(MISSED_TODAY_KEY_PREFIX + languageId);
+        if (!json) return [];
+        const record = JSON.parse(json);
+        return record.date === todayKey() ? record.keys : [];
+    } catch (error) {
+        console.error("Failed To Load Missed Today", error);
+        return [];
+    }
+}
+
+async function addMissedTodayKey(languageId: string, cardKey: string) {
+    try {
+        const keys = await loadMissedTodayKeys(languageId);
+        if (!keys.includes(cardKey)) keys.push(cardKey);
+        await AsyncStorage.setItem(
+            MISSED_TODAY_KEY_PREFIX + languageId,
+            JSON.stringify({ date: todayKey(), keys })
+        );
+    } catch (error) {
+        console.error("Failed To Save Missed Today", error);
+    }
+}
+
 // A card is "New" until its first grade, at which point it gets an `srs` sub-object
 // (FSRS's Card state) attached. Cards saved before FSRS existed simply lack this field,
 // so they're treated as New the first time they're encountered — no migration needed.
@@ -216,6 +259,48 @@ export async function gradeCard(languageId: string, cardObject: any, isGood: boo
     if (wasNew) {
         await incrementNewCardsIntroducedToday(languageId);
     }
+    if (!isGood) {
+        await addMissedTodayKey(languageId, getCardKey(updatedCard));
+    }
 
     return updatedCard;
+}
+
+// --- "Extra" review collections ---
+// These are deliberately decoupled from the SRS system: they don't read or affect due
+// dates/allowances, grading them doesn't persist anything, and the collection itself is
+// just built fresh each time — nothing here needs to survive the session being closed.
+
+function shuffled<T>(items: T[]): T[] {
+    const result = [...items];
+    for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+}
+
+export async function getRandomCardSample(languageId: string, count: number): Promise<any[]> {
+    const deck = await loadReviewDeck(languageId);
+    return shuffled(Object.values(deck)).slice(0, count);
+}
+
+// Cards graded "Again" at least once today, regardless of their current FSRS state.
+export async function getForgottenCards(languageId: string): Promise<any[]> {
+    const deck = await loadReviewDeck(languageId);
+    const missedKeys = await loadMissedTodayKeys(languageId);
+    return missedKeys.map((key) => deck[key]).filter(Boolean);
+}
+
+// Reverts gradeCard's effects for one card: restores its exact pre-grade stored state
+// (removing `srs` entirely if it had been New) and, if that grade had counted against
+// today's new-card allowance, gives that slot back.
+export async function undoGradeCard(languageId: string, previousCard: any): Promise<void> {
+    const deck = await loadReviewDeck(languageId);
+    deck[getCardKey(previousCard)] = previousCard;
+    await updateReviewDeck(languageId, deck);
+
+    if (isCardNew(previousCard)) {
+        await decrementNewCardsIntroducedToday(languageId);
+    }
 }
