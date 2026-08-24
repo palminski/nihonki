@@ -195,6 +195,7 @@ export default function ReviewScreen() {
                         onSwipeRight={() => handleGrade(true)}
                         onSwipeLeft={() => handleGrade(false)}
                         onFlipChange={setIsCardFlipped}
+                        preview={preview}
                     />
                 </View>
 

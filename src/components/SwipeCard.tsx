@@ -2,12 +2,16 @@ import { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import { Animated, PanResponder, View, Text, Pressable, Dimensions, StyleSheet } from "react-native";
 import FuriganaText from "~/components/FuriganaText";
 import { VocabCard as VocabWord, normalizeCard } from "~/utils/cardTypes";
+import { formatInterval } from "~/utils/srsManager";
 
 interface SwipeCardProps {
     vocabWord: VocabWord;
     onSwipeRight: () => void;
     onSwipeLeft: () => void;
     onFlipChange?: (isFlipped: boolean) => void;
+    // Next-due preview for a Good/Again grade — shown under the swipe stamps so users
+    // can debug scheduling. Omitted (e.g. in Extra Review sessions) hides the labels.
+    preview?: { again: Date; good: Date } | null;
 }
 
 export interface SwipeCardHandle {
@@ -36,7 +40,7 @@ function renderBoldSegments(text: string, boldStyle: object) {
 }
 
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard(
-    { vocabWord, onSwipeRight, onSwipeLeft, onFlipChange },
+    { vocabWord, onSwipeRight, onSwipeLeft, onFlipChange, preview },
     ref
 ) {
     const position = useRef(new Animated.ValueXY()).current;
@@ -166,9 +170,11 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
             <Pressable style={{ flex: 1 }} onPress={() => setFlipped(!isFlippedRef.current)}>
                 <Animated.View style={[styles.stamp, styles.goodStamp, { opacity: goodOpacity }]}>
                     <Text style={styles.stampKanjiGood}>正</Text>
+                    {preview && <Text style={styles.stampIntervalGood}>{formatInterval(preview.good)}</Text>}
                 </Animated.View>
                 <Animated.View style={[styles.stamp, styles.againStamp, { opacity: againOpacity }]}>
                     <Text style={styles.stampKanjiBad}>誤</Text>
+                    {preview && <Text style={styles.stampIntervalBad}>{formatInterval(preview.again)}</Text>}
                 </Animated.View>
 
                 <Animated.View
@@ -326,9 +332,9 @@ const styles = StyleSheet.create({
     stamp: {
         position: "absolute",
         top: 20,
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+        width: 76,
+        height: 76,
+        borderRadius: 38,
         borderWidth: 3,
         alignItems: "center",
         justifyContent: "center",
@@ -346,12 +352,22 @@ const styles = StyleSheet.create({
     },
     stampKanjiGood: {
         fontWeight: "bold",
-        fontSize: 32,
+        fontSize: 28,
         color: "#4ade80",
     },
     stampKanjiBad: {
         fontWeight: "bold",
-        fontSize: 32,
+        fontSize: 28,
+        color: "#f87171",
+    },
+    stampIntervalGood: {
+        fontWeight: "600",
+        fontSize: 11,
+        color: "#4ade80",
+    },
+    stampIntervalBad: {
+        fontWeight: "600",
+        fontSize: 11,
         color: "#f87171",
     },
 });

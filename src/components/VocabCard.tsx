@@ -70,6 +70,24 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
     const subheading = isJapaneseCard(vocabWord) ? vocabWord.kana : vocabWord.partOfSpeech;
     const exampleSentence = isJapaneseCard(vocabWord) ? vocabWord.exampleSentenceKanji : vocabWord.exampleSentence;
 
+    // With Anki enabled there are two action buttons instead of one — stacking both next
+    // to the headword/meaning text crowds them into a narrow column, so they move to a
+    // full-width row under the card instead. With just "Add to Deck" alone, the header
+    // corner still has plenty of room.
+    const ankiSendAvailable = Platform.OS === "android" && isAnkiEnabled && isJapanese;
+
+    const addToDeckButton = !isInDeck ? (
+        <Pressable onPress={() => handleAddToDeck(vocabWord)} style={[styles.actionButton, ankiSendAvailable && { flex: 1, justifyContent: 'center' }]}>
+            <Text style={styles.actionButtonText}>Add to Deck</Text>
+            <Ionicons style={{ marginLeft: 8 }} name="albums-outline" size={12} color={"#fff"} />
+        </Pressable>
+    ) : (
+        <Pressable style={[styles.doneButton, ankiSendAvailable && { flex: 1, justifyContent: 'center' }]}>
+            <Text style={styles.doneButtonText}>In Deck!</Text>
+            <Ionicons style={{ marginLeft: 8 }} name="checkmark-outline" size={12} color={"#C084FC"} />
+        </Pressable>
+    );
+
     return (
         <View style={styles.card}>
             <View style={styles.headerRow}>
@@ -81,37 +99,11 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
                         {vocabWord.meaning}
                     </Text>
                 </Pressable>
-                <View style={{ alignItems: 'flex-end' }}>
-                    {
-                        !isInDeck ?
-                            <Pressable onPress={() => handleAddToDeck(vocabWord)} style={styles.actionButton}>
-                                <Text style={styles.actionButtonText}>Add to Deck</Text>
-                                <Ionicons style={{ marginLeft: 8 }} name="albums-outline" size={12} color={"#fff"} />
-                            </Pressable>
-                            :
-                            <Pressable style={styles.doneButton}>
-                                <Text style={styles.doneButtonText}>In Deck!</Text>
-                                <Ionicons style={{ marginLeft: 8 }} name="checkmark-outline" size={12} color={"#C084FC"} />
-                            </Pressable>
-                    }
-                    {
-                        Platform.OS === "android" && isAnkiEnabled && isJapanese &&
-                        <View style={{ marginTop: 8 }}>
-                            {
-                                !isAdded ?
-                                    <Pressable onPress={() => handleSendToAnki(vocabWord)} style={styles.actionButton}>
-                                        <Text style={styles.actionButtonText}>Send to Anki</Text>
-                                        <Ionicons style={{ marginLeft: 8 }} name="send-outline" size={12} color={"#fff"} />
-                                    </Pressable>
-                                    :
-                                    <Pressable style={styles.doneButton}>
-                                        <Text style={styles.doneButtonText}>Card Added!</Text>
-                                        <Ionicons style={{ marginLeft: 8 }} name="checkmark-outline" size={12} color={"#C084FC"} />
-                                    </Pressable>
-                            }
-                        </View>
-                    }
-                </View>
+                {!ankiSendAvailable && (
+                    <View style={{ alignItems: 'flex-end' }}>
+                        {addToDeckButton}
+                    </View>
+                )}
             </View>
             {
                 isOpen &&
@@ -142,6 +134,24 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
                 </>
             }
 
+            {ankiSendAvailable && (
+                <View style={styles.footerRow}>
+                    {addToDeckButton}
+                    {
+                        !isAdded ?
+                            <Pressable onPress={() => handleSendToAnki(vocabWord)} style={[styles.actionButton, { flex: 1, justifyContent: 'center' }]}>
+                                <Text style={styles.actionButtonText}>Send to Anki</Text>
+                                <Ionicons style={{ marginLeft: 8 }} name="send-outline" size={12} color={"#fff"} />
+                            </Pressable>
+                            :
+                            <Pressable style={[styles.doneButton, { flex: 1, justifyContent: 'center' }]}>
+                                <Text style={styles.doneButtonText}>Card Added!</Text>
+                                <Ionicons style={{ marginLeft: 8 }} name="checkmark-outline" size={12} color={"#C084FC"} />
+                            </Pressable>
+                    }
+                </View>
+            )}
+
         </View>
 
 
@@ -166,6 +176,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
+    },
+    footerRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 12,
     },
     headwordLine: {
         color: colors.purple300,

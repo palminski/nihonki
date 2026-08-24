@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import JapaneseHomeScreen from '~/screens/JapaneseHomeScreen';
 import AddWordsScreen from '~/screens/AddWordsScreen';
+import ScanTextScreen from '~/screens/ScanTextScreen';
 import LanguageSelectScreen from '~/screens/LanguageSelectScreen';
 import ManageLanguagesScreen from '~/screens/ManageLanguagesScreen';
 import SettingsScreen from '~/screens/SettingsScreen';
@@ -197,11 +198,11 @@ export default function App() {
                         <Stack.Screen
                             name='Edit Card'
                             component={CardEditScreen}
-                            options={{
-                                title: "Edit Card",
+                            options={({ route }) => ({
+                                title: (route.params as { cardKey?: string } | undefined)?.cardKey ? "Edit Card" : "New Card",
                                 headerStyle: { backgroundColor: "#050505" },
                                 headerTintColor: "#fff",
-                            }}
+                            })}
                         />
 
                         <Stack.Screen
@@ -233,6 +234,16 @@ export default function App() {
                             component={AddWordsScreen}
                             options={({ route }) => ({
                                 title: `${(route.params as { languageLabel?: string } | undefined)?.languageLabel ?? ""} Add Words`.trim(),
+                                headerStyle: { backgroundColor: "#050505" },
+                                headerTintColor: "#fff",
+                            })}
+                        />
+
+                        <Stack.Screen
+                            name='Scan Text'
+                            component={ScanTextScreen}
+                            options={({ route }) => ({
+                                title: `${(route.params as { languageLabel?: string } | undefined)?.languageLabel ?? ""} Scan Text`.trim(),
                                 headerStyle: { backgroundColor: "#050505" },
                                 headerTintColor: "#fff",
                             })}

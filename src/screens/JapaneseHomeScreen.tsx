@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { NavigationProp, useFocusEffect, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import UmeboshiChan from "../assets/UmeboshiChan.svg";
-import { getDueCounts, DueCounts } from "~/utils/srsManager";
+import ReviewHeatmap from "~/components/ReviewHeatmap";
+import ReviewForecastChart from "~/components/ReviewForecastChart";
+import { getDueCounts, DueCounts, loadReviewActivity, getForecastCounts } from "~/utils/srsManager";
 import { colors, withOpacity } from "~/utils/colors";
 
 const EMPTY_DUE_COUNTS: DueCounts = { newCount: 0, learningCount: 0, reviewCount: 0 };
@@ -14,68 +15,83 @@ export default function JapaneseHomeScreen({ navigation }: { navigation: Navigat
     const { languageId = "japanese", languageLabel } = (route.params as { languageId?: string; languageLabel?: string } | undefined) ?? {};
 
     const [dueCounts, setDueCounts] = useState<DueCounts>(EMPTY_DUE_COUNTS);
+    const [activity, setActivity] = useState<Record<string, number>>({});
+    const [forecastCounts, setForecastCounts] = useState<number[]>([]);
 
     useFocusEffect(
         useCallback(() => {
             (async () => {
                 setDueCounts(await getDueCounts(languageId));
+                setActivity(await loadReviewActivity(languageId));
+                setForecastCounts(await getForecastCounts(languageId));
             })();
         }, [languageId])
     );
 
     return (
         <ScreenWrapper>
-            <View style={styles.container}>
-                <UmeboshiChan width={160} height={160} style={{ marginBottom: 16 }} />
-
-                <View style={styles.dueCountsBox}>
-                    <View style={styles.dueCountItem}>
-                        <Text style={[styles.dueCountNumber, { color: colors.blue400 }]}>{dueCounts.newCount}</Text>
-                        <Text style={styles.dueCountLabel}>New</Text>
-                    </View>
-                    <View style={styles.dueCountItem}>
-                        <Text style={[styles.dueCountNumber, { color: colors.red400 }]}>{dueCounts.learningCount}</Text>
-                        <Text style={styles.dueCountLabel}>Learning</Text>
-                    </View>
-                    <View style={styles.dueCountItem}>
-                        <Text style={[styles.dueCountNumber, { color: colors.green400 }]}>{dueCounts.reviewCount}</Text>
-                        <Text style={styles.dueCountLabel}>Review</Text>
-                    </View>
-                </View>
-
-                <View style={styles.iconRow}>
-                    <Pressable onPress={() => navigation.navigate("Card List", { languageId, languageLabel })} style={styles.iconButton}>
-                        <View style={styles.iconCircle}>
-                            <Ionicons name="list" size={30} color="#e6b3ff" />
+            <View style={{ flex: 1 }}>
+                <ScrollView
+                    style={{ flex: 1 }}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.dueCountsBox}>
+                        <View style={styles.dueCountItem}>
+                            <Text style={[styles.dueCountNumber, { color: colors.blue400 }]}>{dueCounts.newCount}</Text>
+                            <Text style={styles.dueCountLabel}>New</Text>
                         </View>
-                        <Text style={styles.iconLabel}>Card List</Text>
-                    </Pressable>
-
-                    <Pressable onPress={() => navigation.navigate("Review", { languageId, languageLabel })} style={styles.iconButton}>
-                        <View style={[styles.iconCircle, { padding: 20 }]}>
-                            <Ionicons name="layers" size={40} color="#e6b3ff" />
+                        <View style={styles.dueCountItem}>
+                            <Text style={[styles.dueCountNumber, { color: colors.red400 }]}>{dueCounts.learningCount}</Text>
+                            <Text style={styles.dueCountLabel}>Learning</Text>
                         </View>
-                        <Text style={styles.iconLabel}>Review</Text>
-                    </Pressable>
-
-                    <Pressable onPress={() => navigation.navigate("Add Words", { languageId, languageLabel })} style={styles.iconButton}>
-                        <View style={styles.iconCircle}>
-                            <Ionicons name="add-circle-outline" size={30} color="#e6b3ff" />
+                        <View style={styles.dueCountItem}>
+                            <Text style={[styles.dueCountNumber, { color: colors.green400 }]}>{dueCounts.reviewCount}</Text>
+                            <Text style={styles.dueCountLabel}>Review</Text>
                         </View>
-                        <Text style={styles.iconLabel}>Add Words</Text>
-                    </Pressable>
-                </View>
+                    </View>
+
+                    <View style={styles.statsCard}>
+                        <ReviewHeatmap activity={activity} />
+                    </View>
+
+                    <View style={styles.statsCard}>
+                        <ReviewForecastChart counts={forecastCounts} />
+                    </View>
+                </ScrollView>
+            </View>
+
+            <View style={styles.bottomBar}>
+                <Pressable onPress={() => navigation.navigate("Card List", { languageId, languageLabel })} style={styles.iconButton}>
+                    <View style={styles.iconCircle}>
+                        <Ionicons name="list" size={30} color="#e6b3ff" />
+                    </View>
+                    <Text style={styles.iconLabel}>Card List</Text>
+                </Pressable>
+
+                <Pressable onPress={() => navigation.navigate("Review", { languageId, languageLabel })} style={styles.iconButton}>
+                    <View style={[styles.iconCircle, { padding: 20 }]}>
+                        <Ionicons name="layers" size={40} color="#e6b3ff" />
+                    </View>
+                    <Text style={styles.iconLabel}>Review</Text>
+                </Pressable>
+
+                <Pressable onPress={() => navigation.navigate("Add Words", { languageId, languageLabel })} style={styles.iconButton}>
+                    <View style={styles.iconCircle}>
+                        <Ionicons name="add-circle-outline" size={30} color="#e6b3ff" />
+                    </View>
+                    <Text style={styles.iconLabel}>Add Words</Text>
+                </Pressable>
             </View>
         </ScreenWrapper>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+    scrollContent: {
         paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 12,
     },
     dueCountsBox: {
         flexDirection: 'row',
@@ -87,7 +103,7 @@ const styles = StyleSheet.create({
         borderColor: colors.purple800,
         paddingHorizontal: 16,
         paddingVertical: 8,
-        marginBottom: 24,
+        marginBottom: 16,
     },
     dueCountItem: {
         alignItems: 'center',
@@ -101,10 +117,25 @@ const styles = StyleSheet.create({
         color: withOpacity(colors.purple300, 0.5),
         fontSize: 12,
     },
-    iconRow: {
+    statsCard: {
+        backgroundColor: colors.black,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: colors.purple800,
+        padding: 16,
+        marginBottom: 16,
+    },
+    bottomBar: {
         flexDirection: 'row',
-        width: '100%',
         justifyContent: 'space-around',
+        alignItems: 'flex-end',
+        paddingVertical: 4,
+        backgroundColor: colors.black,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
+        elevation: 12,
     },
     iconButton: {
         alignItems: 'center',

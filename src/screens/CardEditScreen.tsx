@@ -3,29 +3,40 @@ import { View, Text, TextInput, ScrollView, Pressable, Alert, StyleSheet } from 
 import { useNavigation, useRoute } from "@react-navigation/native";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { removeCardFromReviewDeck, addCardToReviewDeck } from "~/utils/deckManager";
-import { JAPANESE_CARD_FIELDS, ROMANIZED_CARD_FIELDS, SIMPLE_CARD_FIELDS, isJapaneseCard, isRomanizedCard, VocabCard } from "~/utils/cardTypes";
+import { JAPANESE_CARD_FIELDS, ROMANIZED_CARD_FIELDS, SIMPLE_CARD_FIELDS, getCardFields, isJapaneseCard, isRomanizedCard, VocabCard } from "~/utils/cardTypes";
 import { colors } from "~/utils/colors";
 
 export default function CardEditScreen() {
     const navigation = useNavigation();
     const route = useRoute();
+    // cardKey/vocabWord are only present when editing an existing card (opened from the
+    // card list) — omitted entirely, this doubles as a blank "create a new card by hand"
+    // form for the given language.
     const { cardKey, vocabWord, languageId = "japanese" } = route.params as {
-        cardKey: string;
-        vocabWord: Record<string, string>;
+        cardKey?: string;
+        vocabWord?: Record<string, string>;
         languageId?: string;
     };
+    const isNewCard = !cardKey;
 
     // Based on the card's own shape rather than the deck's nominal language — a card can
     // end up filed under the wrong language's deck, and editing it should still show the
-    // fields that actually match its data instead of a mismatched blank form.
-    const cardForShapeCheck = vocabWord as unknown as VocabCard;
-    const FIELDS = isJapaneseCard(cardForShapeCheck)
-        ? JAPANESE_CARD_FIELDS
-        : isRomanizedCard(cardForShapeCheck)
-            ? ROMANIZED_CARD_FIELDS
-            : SIMPLE_CARD_FIELDS;
+    // fields that actually match its data instead of a mismatched blank form. A brand-new
+    // card has no data to infer a shape from, so it falls back to the language's default.
+    const FIELDS = vocabWord
+        ? (isJapaneseCard(vocabWord as unknown as VocabCard)
+            ? JAPANESE_CARD_FIELDS
+            : isRomanizedCard(vocabWord as unknown as VocabCard)
+                ? ROMANIZED_CARD_FIELDS
+                : SIMPLE_CARD_FIELDS)
+        : getCardFields(languageId);
 
-    const [form, setForm] = useState<Record<string, string>>(vocabWord);
+    const [form, setForm] = useState<Record<string, string>>(() => {
+        if (vocabWord) return vocabWord;
+        const blank: Record<string, string> = { languageId };
+        for (const field of FIELDS) blank[field.key as string] = "";
+        return blank;
+    });
     const [saving, setSaving] = useState(false);
 
     function handleChange(key: string, value: string) {
@@ -39,7 +50,9 @@ export default function CardEditScreen() {
             return;
         }
         setSaving(true);
-        await removeCardFromReviewDeck(languageId, cardKey);
+        if (!isNewCard) {
+            await removeCardFromReviewDeck(languageId, cardKey);
+        }
         await addCardToReviewDeck(languageId, form);
         setSaving(false);
         navigation.goBack();
@@ -83,16 +96,20 @@ export default function CardEditScreen() {
                     disabled={saving}
                     style={styles.saveButton}
                 >
-                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save Card"}</Text>
+                    <Text style={styles.saveButtonText}>
+                        {saving ? "Saving..." : isNewCard ? "Add Card" : "Save Card"}
+                    </Text>
                 </Pressable>
 
-                <Pressable
-                    onPress={handleDelete}
-                    disabled={saving}
-                    style={styles.deleteButton}
-                >
-                    <Text style={styles.deleteButtonText}>Delete Card</Text>
-                </Pressable>
+                {!isNewCard && (
+                    <Pressable
+                        onPress={handleDelete}
+                        disabled={saving}
+                        style={styles.deleteButton}
+                    >
+                        <Text style={styles.deleteButtonText}>Delete Card</Text>
+                    </Pressable>
+                )}
             </ScrollView>
         </ScreenWrapper>
     );

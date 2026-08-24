@@ -4,7 +4,19 @@ import { useFocusEffect, useNavigation, useRoute, NavigationProp } from "@react-
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { loadReviewDeck } from "~/utils/deckManager";
 import { isJapaneseCard } from "~/utils/cardTypes";
+import { isCardNew, isCardDue, getCardQueueCategory, formatInterval } from "~/utils/srsManager";
 import { colors, withOpacity } from "~/utils/colors";
+
+// Debug-oriented "when will I see this again" label for the card list — mirrors the
+// New/Learning/Review coloring used on the due-counts badges elsewhere.
+function getNextDueInfo(card: any): { label: string; color: string } {
+    if (isCardNew(card)) {
+        return { label: "New", color: colors.blue400 };
+    }
+    const color = getCardQueueCategory(card) === "learning" ? colors.red400 : colors.green400;
+    const label = isCardDue(card) ? "Due" : formatInterval(new Date(card.srs.due));
+    return { label, color };
+}
 
 export default function CardListScreen() {
     const navigation = useNavigation<NavigationProp<any>>();
@@ -54,11 +66,13 @@ export default function CardListScreen() {
                         <Text style={[styles.headerText, { width: 70 }]}>Kanji</Text>
                         <Text style={[styles.headerText, { width: 90 }]}>Kana</Text>
                         <Text style={[styles.headerText, { flex: 1 }]}>Meaning</Text>
+                        <Text style={[styles.headerText, { width: 50, textAlign: 'right' }]}>Next</Text>
                     </View>
                 ) : (
                     <View style={styles.headerRow}>
                         <Text style={[styles.headerText, { width: 110 }]}>Word</Text>
                         <Text style={[styles.headerText, { flex: 1 }]}>Meaning</Text>
+                        <Text style={[styles.headerText, { width: 50, textAlign: 'right' }]}>Next</Text>
                     </View>
                 )}
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
@@ -77,6 +91,9 @@ export default function CardListScreen() {
                                 <Text style={[styles.cardText, { width: 110 }]}>{card.word}</Text>
                             )}
                             <Text style={[styles.cardSubText, { flex: 1 }]} numberOfLines={1}>{card.meaning}</Text>
+                            <Text style={[styles.cardText, { width: 50, fontSize: 13, textAlign: 'right', color: getNextDueInfo(card).color }]}>
+                                {getNextDueInfo(card).label}
+                            </Text>
                         </Pressable>
                     ))}
                 </ScrollView>

@@ -108,9 +108,25 @@ export function isCardNew(cardObject: any): boolean {
     return !cardObject.srs;
 }
 
+function startOfDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 export function isCardDue(cardObject: any, now: Date = new Date()): boolean {
     if (isCardNew(cardObject)) return false;
-    return new Date(cardObject.srs.due).getTime() <= now.getTime();
+    const due = new Date(cardObject.srs.due);
+
+    // Review-state cards are day-granular, Anki-style: once today's calendar day reaches
+    // the due date, the card is due for the rest of that day regardless of what time of
+    // day the FSRS algorithm happened to land the due timestamp on — otherwise a card due
+    // at, say, 8pm today would keep showing "in 6h" all day instead of being reviewable
+    // now, with no real midnight-rollover happening until that exact hour arrives.
+    // Learning/Relearning steps are short (minutes), so those still need exact-time
+    // comparison for the "come back in ~15m" cooldown to mean anything.
+    if (cardObject.srs.state === State.Review) {
+        return startOfDay(due).getTime() <= startOfDay(now).getTime();
+    }
+    return due.getTime() <= now.getTime();
 }
 
 // Builds today's review queue for a language's deck: due Review-state cards (earliest
@@ -262,8 +278,99 @@ export async function gradeCard(languageId: string, cardObject: any, isGood: boo
     if (!isGood) {
         await addMissedTodayKey(languageId, getCardKey(updatedCard));
     }
+    await recordReviewActivity(languageId, now);
 
     return updatedCard;
+}
+
+// --- Review activity history (for the "how many days have I reviewed" heatmap) ---
+
+const REVIEW_HISTORY_KEY_PREFIX = "reviewHistory_";
+
+// Zero-padded, unlike todayKey() above — this one needs to sort/parse back cleanly since
+// it's read back as a whole history object and walked over a generated date range.
+function dateKeyFor(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+// One count per calendar day a card was graded, keyed by dateKeyFor. Deliberately not
+// touched by undoGradeCard — same accepted gap as the missed-today log, see memory.
+async function recordReviewActivity(languageId: string, date: Date) {
+    try {
+        const key = REVIEW_HISTORY_KEY_PREFIX + languageId;
+        const json = await AsyncStorage.getItem(key);
+        const history: Record<string, number> = json ? JSON.parse(json) : {};
+        const dateKey = dateKeyFor(date);
+        history[dateKey] = (history[dateKey] ?? 0) + 1;
+        await AsyncStorage.setItem(key, JSON.stringify(history));
+    } catch (error) {
+        console.error("Failed To Record Review Activity", error);
+    }
+}
+
+// Every card's FSRS state already carries a `last_review` timestamp set the moment it's
+// graded, independent of the log above — so it doubles as a backfill for any day the log
+// itself can't vouch for (most notably "today", right after this log was first shipped,
+// but also anyone's pre-existing review history). The log stays authoritative for volume
+// on well-tracked days (a card graded twice today only has one last_review timestamp),
+// so this only raises a day's count, never lowers it.
+function backfillFromLastReview(deck: Record<string, any>, history: Record<string, number>): Record<string, number> {
+    const derivedCounts: Record<string, number> = {};
+    for (const card of Object.values(deck)) {
+        const lastReview = (card as any)?.srs?.last_review;
+        if (!lastReview) continue;
+        const dateKey = dateKeyFor(new Date(lastReview));
+        derivedCounts[dateKey] = (derivedCounts[dateKey] ?? 0) + 1;
+    }
+
+    const merged = { ...history };
+    for (const [dateKey, derivedCount] of Object.entries(derivedCounts)) {
+        merged[dateKey] = Math.max(merged[dateKey] ?? 0, derivedCount);
+    }
+    return merged;
+}
+
+export async function loadReviewActivity(languageId: string): Promise<Record<string, number>> {
+    try {
+        const json = await AsyncStorage.getItem(REVIEW_HISTORY_KEY_PREFIX + languageId);
+        const history: Record<string, number> = json ? JSON.parse(json) : {};
+        const deck = await loadReviewDeck(languageId);
+        return backfillFromLastReview(deck, history);
+    } catch (error) {
+        console.error("Failed To Load Review Activity", error);
+        return {};
+    }
+}
+
+// Buckets currently-scheduled (non-New) cards by how many calendar days from now their
+// `srs.due` falls on, for a "cards due" forecast graph. Anything already overdue counts
+// toward "today" (bucket 0). New cards have no fixed due date, so instead of being
+// excluded entirely, today's bucket also gets however many of them will actually be
+// introduced today — i.e. today's remaining slice of the new-cards-per-day allowance,
+// same computation getDueQueue uses.
+export async function getForecastCounts(languageId: string, days: number = 30): Promise<number[]> {
+    const deck = await loadReviewDeck(languageId);
+    const allCards: any[] = Object.values(deck);
+    const now = new Date();
+    const startOfToday = startOfDay(now);
+
+    const counts = new Array(days).fill(0);
+    let newCardCount = 0;
+    for (const card of allCards) {
+        if (isCardNew(card)) {
+            newCardCount++;
+            continue;
+        }
+        const dayIndex = Math.max(0, Math.round((startOfDay(new Date(card.srs.due)).getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24)));
+        if (dayIndex < days) counts[dayIndex] += 1;
+    }
+
+    const newCardsPerDay = await loadNewCardsPerDay(languageId);
+    const introducedToday = await loadNewCardsIntroducedToday(languageId);
+    const newCardAllowance = Math.max(0, newCardsPerDay - introducedToday);
+    counts[0] += Math.min(newCardCount, newCardAllowance);
+
+    return counts;
 }
 
 // --- "Extra" review collections ---

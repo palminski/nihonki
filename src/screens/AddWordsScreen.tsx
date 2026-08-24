@@ -1,16 +1,14 @@
-import { View, Text, Pressable, Alert, Image, ScrollView, NativeModules, TextInput, ActivityIndicator, ImageBackground, Platform, StyleSheet } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { View, Text, Pressable, Alert, ScrollView, TextInput, ActivityIndicator, Modal, Platform, StyleSheet } from "react-native";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState, useRef, useEffect, useContext, useCallback } from "react";
 import { loadAPIKeySetting } from "~/utils/settingsManager";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationProp, useFocusEffect, useRoute } from "@react-navigation/native";
 import VocabCard from "~/components/VocabCard";
-import ImageView from "react-native-image-viewing";
 import axios from "axios";
 import Purchases from "react-native-purchases";
 import { getIsUserSubscribed, promptUserSubscription, getDeviceInfo } from "~/utils/subscriptionMethods";
-import { translateImage, translateWord, translateWordGeneric, translateWordRomanized } from "~/utils/aiAPICalls";
+import { translateWord, translateWordGeneric, translateWordRomanized } from "~/utils/aiAPICalls";
 import { getRequiredCardFields, getCardShape, getRomanizationSystem } from "~/utils/cardTypes";
 import { getCardKey } from "~/utils/deckManager";
 import { AppContext } from "App";
@@ -34,13 +32,10 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
 
     const [inputText, setInputText] = useState<string>("");
 
-    const [isPictureMode, setIsPictureMode] = useState<boolean>(true);
+    const [isEnterWordModalVisible, setIsEnterWordModalVisible] = useState(false);
 
     const [kanjiObjectArray, setKanjiObjectArray] = useState<Array<any>>([]);
 
-    const [snappedImages, setSnappedImages] = useState<any[]>([]);
-    const [imageViewerVisible, setImageViewerVisible] = useState(false);
-    const [imageIndex, setImageIndex] = useState(0);
     const [hasKey, setHasKey] = useState(false);
 
     const appContext = useContext(AppContext);
@@ -61,107 +56,9 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
         }, [])
     )
 
-
     const textInputRef = useRef<TextInput>(null);
 
-    async function handleOpenCamera() {
-
-        const key = await loadAPIKeySetting();
-        if (userData.imagesRemaining <= 0 && !await getIsUserSubscribed() && (key == null || key == "")) {
-            Alert.alert("Setup Required", SETUP_REQUIRED_MESSAGE)
-            return;
-        }
-
-        const cameraRequestId = `Camera_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        setIsPictureMode(true);
-        if (permission.status !== 'granted') {
-            Alert.alert("You must grant application access to camera to take pictures of text");
-            return;
-        }
-        const result = await ImagePicker.launchCameraAsync({
-            cameraType: ImagePicker.CameraType.back,
-            base64: true,
-            quality: 1,
-            allowsEditing: true,
-            exif: false,
-        });
-        if (!result.canceled) {
-            const asset = result.assets[0];
-
-            setCurrentRequests(prev => ({
-                ...prev,
-                [cameraRequestId]: asset.uri
-            }));
-
-            try {
-
-                let jsonString = "";
-                if (key) {
-                    jsonString = await translateImage(asset.base64);
-                } else {
-                    try {
-                        const appUserId = userData.appUserId;
-                        setUserData(prev => ({
-                            ...prev,
-                            imagesRemaining: Math.max(0, prev.imagesRemaining - 1),
-                        }));
-                        const response = await axios.post(
-                            // Hard Coding While Testing
-                            // `http://10.0.0.187:8000/api/ai_translation/image`,
-                            `https://nihonki-server-udaaiuh2.on-forge.com/api/ai_translation/image`,
-                            { imageBase64: asset.base64, appUserId: appUserId },
-                            {});
-                        jsonString = response.data.message;
-                    } catch (error: any) {
-                        setUserData(prev => ({
-                            ...prev,
-                            imagesRemaining: prev.imagesRemaining + 1,
-                        }));
-                        throw error;
-                    }
-                }
-
-                setCurrentRequests(prev => {
-                    const { [cameraRequestId]: _, ...rest } = prev
-                    return rest
-                });
-                setSnappedImages(prevItems => [{ uri: asset.uri }, ...prevItems])
-
-
-                let cardObjectArray = [];
-
-                if (jsonString) {
-                    cardObjectArray = JSON.parse(jsonString);
-                }
-                if (!Array.isArray(cardObjectArray)) {
-                    return;
-                }
-
-                cardObjectArray.forEach(cardObject => {
-                    cardObject.languageId = "japanese";
-                });
-
-                setKanjiObjectArray(prev => {
-                    const filteredPrev = prev.filter(
-                        kanjiObjectArray => !cardObjectArray.some(cardObject => getCardKey(cardObject) === getCardKey(kanjiObjectArray))
-                    );
-                    return [...cardObjectArray, ...filteredPrev]
-                });
-
-            } catch (error: any) {
-                setCurrentRequests(prev => {
-                    const { [cameraRequestId]: _, ...rest } = prev
-                    return rest
-                });
-                alert(error?.message);
-            }
-        }
-    }
-
     const handleTextSubmit = async (textToSend: string) => {
-        setIsPictureMode(true);
-
         if (textToSend == null || textToSend == "") return;
 
         const key = await loadAPIKeySetting();
@@ -261,14 +158,21 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
             Alert.alert("Setup Required", SETUP_REQUIRED_MESSAGE)
             return;
         }
-        setIsPictureMode(false);
-
-
-        textInputRef.current?.blur();
-        setTimeout(() => {
-            textInputRef.current?.focus();
-        }, 150);
+        setIsEnterWordModalVisible(true);
     }
+
+    function handleCloseEnterWordModal() {
+        setIsEnterWordModalVisible(false);
+        setInputText("");
+    }
+
+    // autoFocus on the modal's TextInput isn't reliably respected the instant the modal
+    // mounts on every platform, so nudge focus once it's actually visible.
+    useEffect(() => {
+        if (!isEnterWordModalVisible) return;
+        const timeout = setTimeout(() => textInputRef.current?.focus(), 150);
+        return () => clearTimeout(timeout);
+    }, [isEnterWordModalVisible]);
 
     function ValidateCardData(data: any): { valid: boolean; missing: string[] } {
         const requiredFields = getRequiredCardFields(data.languageId ?? languageId);
@@ -289,72 +193,17 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                     showsVerticalScrollIndicator={false}
                 >
 
-                    {/* INPUT AND STATUS BOX */}
-                    {
-                        isPictureMode ?
-                            <View style={styles.inputBox}>
-                                <ScrollView horizontal>
-                                    {
-                                        snappedImages.length > 0 ?
-                                            snappedImages.map((image, index) => (
-                                                <Pressable key={index} onPress={() => { setImageViewerVisible(true); setImageIndex(index) }}>
-                                                    <Image source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />
-
-                                                </Pressable>
-                                            ))
-                                            :
-                                            <Text style={styles.placeholderText}>Scanned Images Will Appear Here...</Text>
-                                    }
-                                    <ImageView
-                                        images={snappedImages}
-                                        imageIndex={imageIndex}
-                                        visible={imageViewerVisible}
-                                        onRequestClose={() => setImageViewerVisible(false)}
-                                    />
-                                </ScrollView>
-                            </View>
-                            :
-                            <View style={styles.inputBox}>
-                                <View style={styles.textEntryRow}>
-                                    <TextInput
-                                        onSubmitEditing={() => handleTextSubmit(inputText)}
-                                        ref={textInputRef}
-                                        style={styles.textEntryInput}
-                                        placeholderTextColor={withOpacity(colors.purple300, 0.5)}
-                                        value={inputText}
-                                        onChangeText={(text) => HandleFormChange(text)}
-                                        placeholder='言葉こちら'
-                                    />
-                                    <View style={{ justifyContent: 'flex-end' }}>
-                                        <Pressable onPress={() => handleTextSubmit(inputText)} style={styles.submitButton}>
-                                            <Text style={{ color: colors.white }}>Submit</Text>
-                                        </Pressable>
-                                    </View>
-                                </View>
-                            </View>
-                    }
-
-
                     {
 
-                        Object.entries(currentRequests).map(([key, value]) => (
+                        Object.keys(currentRequests).map((key) => (
                             <View key={key} style={styles.requestCard}>
                                 <View style={styles.requestCardRow}>
                                     <View>
                                         <ActivityIndicator size={50} color={'#A855F7'} />
                                     </View>
                                     <View style={{ marginHorizontal: 'auto' }}>
-                                        {
-                                            value === "text" ?
-                                                <Text style={styles.requestText}>Loading Request For <Text style={{ fontWeight: '600' }}>{key}</Text></Text>
-                                                :
-                                                <Text style={styles.requestText}>Loading Image</Text>
-                                        }
+                                        <Text style={styles.requestText}>Loading Request For <Text style={{ fontWeight: '600' }}>{key}</Text></Text>
                                     </View>
-                                    {
-                                        (value !== "text") && <Image style={styles.requestImage} source={{ uri: value }} />
-                                    }
-
                                 </View>
                             </View>
                         ))
@@ -386,23 +235,21 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
             <View style={{ backgroundColor: 'transparent' }}>
                 <View style={styles.bottomBar}>
 
-                    {isJapanese &&
-                        <View style={styles.bottomBarButton}>
-                            <Pressable onPress={handleOpenCamera}>
-                                <Ionicons name="camera" size={50} color={"#fff"} />
-                                {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
-                                    <View style={[styles.badge, { top: -4, right: -12, width: 28, height: 28 }]}>
-                                        <Text style={styles.badgeText}>{userData.imagesRemaining}</Text>
-                                    </View>
-                                }
-
-                            </Pressable>
-                            <Text style={styles.bottomBarLabel}>Scan Text</Text>
-                        </View>
-                    }
-                    <View style={isJapanese ? styles.bottomBarButton : [styles.bottomBarButton, { width: '100%' }]}>
-                        <Pressable onPress={handleEnterText}>
+                    <View style={styles.bottomBarButton}>
+                        <Pressable onPress={() => navigation.navigate("Edit Card", { languageId })}>
                             <Ionicons name="create-outline" size={30} color={"#fff"} />
+                        </Pressable>
+                        <Text style={styles.bottomBarLabel}>New Card</Text>
+                    </View>
+                    <View style={styles.bottomBarButton}>
+                        <Pressable onPress={() => navigation.navigate("Scan Text", { languageId, languageLabel, onWordPress: handleTextSubmit })}>
+                            <Ionicons name="camera" size={50} color={"#fff"} />
+                        </Pressable>
+                        <Text style={styles.bottomBarLabel}>Scan Text</Text>
+                    </View>
+                    <View style={styles.bottomBarButton}>
+                        <Pressable onPress={handleEnterText}>
+                            <Ionicons name="sparkles-outline" size={30} color={"#fff"} />
                             {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
                                 <View style={[styles.badge, { top: -4, right: -8, width: 20, height: 20 }]}>
                                     <Text style={[styles.badgeText, { fontSize: 14 }]}>{userData.wordsRemaining}</Text>
@@ -414,31 +261,76 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                 </View>
             </View>
 
+            <Modal
+                visible={isEnterWordModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={handleCloseEnterWordModal}
+            >
+                <Pressable style={styles.modalBackdrop} onPress={handleCloseEnterWordModal}>
+                    <Pressable style={styles.modalCard} onPress={() => { }}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Enter a Word</Text>
+                            <Pressable onPress={handleCloseEnterWordModal}>
+                                <Ionicons name="close" size={24} color={colors.white} />
+                            </Pressable>
+                        </View>
+                        <View style={styles.textEntryRow}>
+                            <TextInput
+                                onSubmitEditing={() => { handleTextSubmit(inputText); setIsEnterWordModalVisible(false); }}
+                                ref={textInputRef}
+                                style={styles.textEntryInput}
+                                placeholderTextColor={withOpacity(colors.purple300, 0.5)}
+                                value={inputText}
+                                onChangeText={(text) => HandleFormChange(text)}
+                                placeholder='言葉こちら'
+                            />
+                            <View style={{ justifyContent: 'flex-end' }}>
+                                <Pressable
+                                    onPress={() => { handleTextSubmit(inputText); setIsEnterWordModalVisible(false); }}
+                                    style={styles.submitButton}
+                                >
+                                    <Text style={{ color: colors.white }}>Submit</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
         </ScreenWrapper>
     )
 }
 
 const styles = StyleSheet.create({
-    inputBox: {
-        flexDirection: 'row',
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: withOpacity(colors.black, 0.7),
+        justifyContent: 'center',
+        padding: 24,
+    },
+    modalCard: {
         backgroundColor: colors.black,
         borderRadius: 4,
-        minHeight: 100,
         borderWidth: 1,
         borderColor: colors.purple800,
-        marginBottom: 8,
+        padding: 16,
         shadowColor: colors.purple300,
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
         shadowRadius: 15,
         elevation: 4,
     },
-    placeholderText: {
-        color: withOpacity(colors.purple400, 0.5),
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    modalTitle: {
+        color: colors.white,
         fontSize: 18,
-        marginTop: 'auto',
-        paddingLeft: 12,
-        paddingBottom: 8,
+        fontWeight: '600',
     },
     textEntryRow: {
         borderWidth: 1,
@@ -483,13 +375,6 @@ const styles = StyleSheet.create({
         color: colors.purple300,
         fontSize: 18,
     },
-    requestImage: {
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: colors.purple800,
-        width: 100,
-        height: 100,
-    },
     emptyStateText: {
         marginTop: 24,
         fontSize: 20,
@@ -511,7 +396,7 @@ const styles = StyleSheet.create({
     },
     bottomBarButton: {
         alignItems: 'center',
-        width: '50%',
+        width: '33%',
         position: 'relative',
     },
     bottomBarLabel: {

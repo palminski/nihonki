@@ -10,14 +10,20 @@
       "tsconfigPaths": true
     },
     "plugins": [
+      "./plugins/withAnkiModule",
       [
-        "./plugins/withAnkiModule",
-        [
-          "expo-image-picker",
-          {
-            "photosPermission": "The app accesses your photos to let you share them with your friends."
+        "expo-camera",
+        {
+          "cameraPermission": "The app uses your camera to scan text and pull out words to add to your deck."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.5"
           }
-        ]
+        }
       ]
     ],
     "orientation": "portrait",
