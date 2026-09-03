@@ -144,6 +144,33 @@ Example output format:
   "exampleSentenceEnglish": "I run in the park every morning."
 }`;
 
+// German nouns carry grammatical gender that isn't visible from the word alone — prefixing
+// the definite article (der/die/das) the way furigana surfaces reading for Japanese. Keyed
+// off languageLabel (not languageId) since that's the only identifier the generic prompt
+// builders receive, and it already carries the exact same value.
+function getGenderArticleRule(languageLabel) {
+    if (languageLabel === "German") {
+        return `\n- For nouns, prefix the word field with its definite article to show gender ("der", "die", or "das"), e.g. "der Hund", "die Katze", "das Kind". Do not add an article for verbs, adjectives, or other non-nouns.`;
+    }
+    return "";
+}
+
+function getGenderArticleExample(languageLabel) {
+    if (languageLabel === "German") {
+        return `
+
+Example noun with a gender article:
+{
+  "word": "der Hund",
+  "meaning": "dog",
+  "partOfSpeech": "noun",
+  "exampleSentence": "Der <b>Hund</b> läuft im Park.",
+  "exampleSentenceEnglish": "The dog runs in the park."
+}`;
+    }
+    return "";
+}
+
 // Used for any language besides Japanese when the user supplies their own OpenAI key.
 // Mirrors the server's generic v2 prompt so "bring your own key" users get the same
 // schema/behavior as the hosted endpoint.
@@ -181,7 +208,7 @@ ${languageLabel} learner rules:
 - The meaning field must be ONLY a short English translation/gloss of the word (e.g. "mother", "to run", "hello") — a few words at most. NEVER write a dictionary-style definition or explanation, and NEVER write it in ${languageLabel} — it must always be in English.
 - The exampleSentence must be written entirely in ${languageLabel}, with <b></b> wrapping only the target word or phrase.
 - Avoid vulgar/slang meanings unless explicitly requested.
-- Example sentences must be appropriate for general learners (no sexual or offensive content).`;
+- Example sentences must be appropriate for general learners (no sexual or offensive content).${getGenderArticleRule(languageLabel)}${getGenderArticleExample(languageLabel)}`;
 }
 
 export function buildGenericSingleWordInstructionText(languageLabel) {
@@ -203,7 +230,7 @@ Rules:
 - Sentences must be original and show natural, real-world usage.
 - Do not repeat the word alone or use dictionary-style definitions as examples.
 - The meaning field must be ONLY a short English translation/gloss (e.g. "mother", "to run") — never a dictionary-style definition, and never written in ${languageLabel}.
-- The exampleSentence must be entirely in ${languageLabel}, with <b></b> wrapping only the target word or phrase.`;
+- The exampleSentence must be entirely in ${languageLabel}, with <b></b> wrapping only the target word or phrase.${getGenderArticleRule(languageLabel)}`;
 }
 
 // Used for languages whose script doesn't reliably indicate pronunciation to a learner

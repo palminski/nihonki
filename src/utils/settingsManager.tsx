@@ -1,6 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
-const OPENAI_API_KEY = "none"
+// A user's own OpenAI key is a real credential, so it lives in the platform keychain/
+// keystore via SecureStore rather than plaintext AsyncStorage like everything else here.
+const OPENAI_API_KEY_STORAGE_KEY = "openai_api_key";
+// Where the key used to live (under this oddly-generic literal name) before the move to
+// SecureStore — migrated once on first read below, then cleared out.
+const LEGACY_OPENAI_API_KEY_ASYNC_STORAGE_KEY = "none";
 
 const DECK_KEY_PREFIX = "defaultDeck_";
 const ANKI_ENABLED_KEY_PREFIX = "ankiEnabled_";
@@ -38,9 +44,13 @@ export async function loadDeckSetting(languageId: string) {
     }
 }
 
-export async function updateAPIKeySetting(apiKey:string) {
+export async function updateAPIKeySetting(apiKey: string) {
     try {
-        await AsyncStorage.setItem(OPENAI_API_KEY, apiKey);
+        if (apiKey) {
+            await SecureStore.setItemAsync(OPENAI_API_KEY_STORAGE_KEY, apiKey);
+        } else {
+            await SecureStore.deleteItemAsync(OPENAI_API_KEY_STORAGE_KEY);
+        }
     } catch (error) {
         console.error("Failed To Save API Key", error);
     }
@@ -48,11 +58,21 @@ export async function updateAPIKeySetting(apiKey:string) {
 
 export async function loadAPIKeySetting() {
     try {
-       const apiKey = await AsyncStorage.getItem(OPENAI_API_KEY);
-       return apiKey;
+        let apiKey = await SecureStore.getItemAsync(OPENAI_API_KEY_STORAGE_KEY);
+
+        if (apiKey == null) {
+            const legacyApiKey = await AsyncStorage.getItem(LEGACY_OPENAI_API_KEY_ASYNC_STORAGE_KEY);
+            if (legacyApiKey) {
+                await SecureStore.setItemAsync(OPENAI_API_KEY_STORAGE_KEY, legacyApiKey);
+                await AsyncStorage.removeItem(LEGACY_OPENAI_API_KEY_ASYNC_STORAGE_KEY);
+                apiKey = legacyApiKey;
+            }
+        }
+
+        return apiKey;
     } catch (error) {
         console.error("Failed To Load API Key", error);
-        null;
+        return null;
     }
 }
 

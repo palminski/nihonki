@@ -2,10 +2,10 @@ import Purchases from "react-native-purchases";
 import { Alert, Platform } from "react-native";
 import axios from "axios";
 
-// RevenueCat is only configured on Android for now (see App.tsx) — every function here
-// bails out safely on other platforms instead of touching an unconfigured native SDK.
+// RevenueCat is configured on both Android and iOS (see App.tsx) — this just guards
+// against running on some other platform where Purchases was never configured at all.
 function isRevenueCatAvailable() {
-    return Platform.OS === 'android';
+    return Platform.OS === 'android' || Platform.OS === 'ios';
 }
 
 export async function promptUserSubscription(): Promise<boolean> {

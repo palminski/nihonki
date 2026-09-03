@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, Linking, StyleSheet } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { useFocusEffect, useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import SwipeCard, { SwipeCardHandle } from "~/components/SwipeCard";
 import { loadReviewDeck, getCardKey } from "~/utils/deckManager";
@@ -13,6 +14,9 @@ interface LastAction {
     previousCard: any;
     previousPool: any[];
 }
+
+// How many grades back Undo can roll through in one session.
+const MAX_UNDO_STEPS = 10;
 
 export default function ReviewScreen() {
     const navigation = useNavigation<NavigationProp<any>>();
@@ -26,9 +30,10 @@ export default function ReviewScreen() {
     // the same card again (e.g. it's the only one left) reuses the prior instance, whose
     // position is still animated off-screen from the swipe that just happened.
     const [attempt, setAttempt] = useState(0);
-    // Snapshot of pool/currentCard from right before the most recent grade — lets Undo roll
-    // back exactly one step. Cleared on undo or on a fresh focus, so only one level deep.
-    const [lastAction, setLastAction] = useState<LastAction | null>(null);
+    // Stack of pool/currentCard snapshots from right before each of the last MAX_UNDO_STEPS
+    // grades — lets Undo roll back multiple steps, most recent first. Wiped whenever the
+    // session's queue empties out or the screen loses focus (user leaves the review).
+    const [actionStack, setActionStack] = useState<LastAction[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCardFlipped, setIsCardFlipped] = useState(false);
     const cardRef = useRef<SwipeCardHandle>(null);
@@ -43,16 +48,23 @@ export default function ReviewScreen() {
                 setPool(queue);
                 setCurrentCard(pickNextCard(queue));
                 setAttempt((prev) => prev + 1);
-                setLastAction(null);
+                setActionStack([]);
                 setIsCardFlipped(false);
                 setLoading(false);
             })();
+
+            // Fires on blur (navigating away from the review session) — wipes the undo
+            // history so it never carries over into the next session.
+            return () => setActionStack([]);
         }, [languageId])
     );
 
     async function handleGrade(isGood: boolean) {
         if (!currentCard) return;
-        setLastAction({ previousCard: currentCard, previousPool: pool });
+        setActionStack((prev) => {
+            const next = [...prev, { previousCard: currentCard, previousPool: pool }];
+            return next.length > MAX_UNDO_STEPS ? next.slice(next.length - MAX_UNDO_STEPS) : next;
+        });
 
         // Awaited so each card's read-modify-write cycle against the deck fully completes
         // before the next one starts — otherwise rapid swipes could race and clobber
@@ -74,27 +86,36 @@ export default function ReviewScreen() {
         setPool(nextPool);
         setCurrentCard(pickNextCard(nextPool));
         setAttempt((prev) => prev + 1);
+        // Session's done — nothing left to undo back into once it's over.
+        if (nextPool.length === 0) setActionStack([]);
     }
 
     async function handleUndo() {
-        if (!lastAction) return;
+        if (actionStack.length === 0) return;
+        const lastAction = actionStack[actionStack.length - 1];
         await undoGradeCard(languageId, lastAction.previousCard);
 
         setPool(lastAction.previousPool);
         setCurrentCard(lastAction.previousCard);
         setAttempt((prev) => prev + 1);
         setIsCardFlipped(false);
-        setLastAction(null);
+        setActionStack((prev) => prev.slice(0, -1));
     }
 
     function handleLookUpInGoogleTranslate() {
         if (!currentCard) return;
         const headword = normalizeCard(currentCard).headword;
-        Linking.openURL(`https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(headword)}&op=translate`);
+        // Opened via an in-app browser rather than Linking.openURL — if the Google
+        // Translate app is installed, the OS hands this link straight to it as a deep
+        // link, but the app doesn't parse the `text` query param and opens blank.
+        // A Custom Tab/SFSafariViewController targets the browser directly, bypassing
+        // that app-link hijacking, so the pre-filled web page always loads instead.
+        WebBrowser.openBrowserAsync(`https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(headword)}&op=translate`);
     }
 
     const remainingCounts = getDueCountsFromCards(pool);
     const preview = currentCard ? previewNextDue(currentCard) : null;
+    const currentCategory = currentCard ? getCardQueueCategory(currentCard) : null;
 
     if (loading) {
         return (
@@ -165,25 +186,25 @@ export default function ReviewScreen() {
 
                     <View style={styles.dueCountsBox}>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.blue400 }]}>{remainingCounts.newCount}</Text>
+                            <Text style={[styles.dueCountNumber, { color: colors.blue400 }, currentCategory === "new" && styles.dueCountActive]}>{remainingCounts.newCount}</Text>
                             <Text style={styles.dueCountLabel}>New</Text>
                         </View>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.red400 }]}>{remainingCounts.learningCount}</Text>
+                            <Text style={[styles.dueCountNumber, { color: colors.red400 }, currentCategory === "learning" && styles.dueCountActive]}>{remainingCounts.learningCount}</Text>
                             <Text style={styles.dueCountLabel}>Learning</Text>
                         </View>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.green400 }]}>{remainingCounts.reviewCount}</Text>
+                            <Text style={[styles.dueCountNumber, { color: colors.green400 }, currentCategory === "review" && styles.dueCountActive]}>{remainingCounts.reviewCount}</Text>
                             <Text style={styles.dueCountLabel}>Review</Text>
                         </View>
                     </View>
 
                     <Pressable
                         onPress={handleUndo}
-                        disabled={!lastAction}
-                        style={[styles.roundIconButton, !lastAction && { borderColor: colors.purple900, opacity: 0.3 }]}
+                        disabled={actionStack.length === 0}
+                        style={[styles.roundIconButton, actionStack.length === 0 && { borderColor: colors.purple900, opacity: 0.3 }]}
                     >
-                        <Ionicons name="arrow-undo-outline" size={20} color={lastAction ? "#e6b3ff" : "#6b7280"} />
+                        <Ionicons name="arrow-undo-outline" size={20} color={actionStack.length > 0 ? "#e6b3ff" : "#6b7280"} />
                     </Pressable>
                 </View>
 
@@ -307,6 +328,9 @@ const styles = StyleSheet.create({
     dueCountNumber: {
         fontWeight: '600',
         fontSize: 18,
+    },
+    dueCountActive: {
+        textDecorationLine: 'underline',
     },
     dueCountLabel: {
         color: withOpacity(colors.purple300, 0.5),

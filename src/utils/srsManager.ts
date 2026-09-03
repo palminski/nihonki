@@ -108,7 +108,7 @@ export function isCardNew(cardObject: any): boolean {
     return !cardObject.srs;
 }
 
-function startOfDay(date: Date): Date {
+export function startOfDay(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 

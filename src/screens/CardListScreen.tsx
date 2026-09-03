@@ -4,7 +4,7 @@ import { useFocusEffect, useNavigation, useRoute, NavigationProp } from "@react-
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { loadReviewDeck } from "~/utils/deckManager";
 import { isJapaneseCard } from "~/utils/cardTypes";
-import { isCardNew, isCardDue, getCardQueueCategory, formatInterval } from "~/utils/srsManager";
+import { isCardNew, isCardDue, getCardQueueCategory, formatInterval, startOfDay } from "~/utils/srsManager";
 import { colors, withOpacity } from "~/utils/colors";
 
 // Debug-oriented "when will I see this again" label for the card list — mirrors the
@@ -14,7 +14,15 @@ function getNextDueInfo(card: any): { label: string; color: string } {
         return { label: "New", color: colors.blue400 };
     }
     const color = getCardQueueCategory(card) === "learning" ? colors.red400 : colors.green400;
-    const label = isCardDue(card) ? "Due" : formatInterval(new Date(card.srs.due));
+    if (isCardDue(card)) {
+        return { label: "Due", color };
+    }
+    // A Learning/Relearning step can land later today without being "due" yet (those use
+    // exact-time comparison, unlike day-granular Review cards) — still worth calling out
+    // as today rather than a countdown like "6h" that reads as further off than it is.
+    const due = new Date(card.srs.due);
+    const isDueToday = startOfDay(due).getTime() === startOfDay(new Date()).getTime();
+    const label = isDueToday ? "Today" : formatInterval(due);
     return { label, color };
 }
 

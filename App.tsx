@@ -10,6 +10,7 @@ import ScanTextScreen from '~/screens/ScanTextScreen';
 import LanguageSelectScreen from '~/screens/LanguageSelectScreen';
 import ManageLanguagesScreen from '~/screens/ManageLanguagesScreen';
 import SettingsScreen from '~/screens/SettingsScreen';
+import LicensesScreen from '~/screens/LicensesScreen';
 import LanguageSettingsScreen from '~/screens/LanguageSettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { getIsUserSubscribed, getDeviceInfo } from '~/utils/subscriptionMethods';
@@ -28,7 +29,6 @@ const Stack = createNativeStackNavigator();
 interface UserData {
     appUserId: string,
     isSubscribed: boolean,
-    imagesRemaining: number,
     wordsRemaining: number,
 }
 
@@ -45,7 +45,6 @@ export default function App() {
     const [userData, setUserData] = useState<UserData>({
         appUserId: "",
         isSubscribed: false,
-        imagesRemaining: 0,
         wordsRemaining: 0,
     })
 
@@ -67,15 +66,12 @@ export default function App() {
     }, [])
 
     useEffect(() => {
-        // RevenueCat, the subscription entitlement check, and the free-tier device quota
-        // system are all bypassed on iOS for now — RevenueCat isn't configured for the iOS
-        // app yet, and both getAppUserID() and the device-quota lookup depend on it being
-        // configured. iOS users run purely on their own OpenAI API key until this is set up.
-        if (Platform.OS !== 'android') return;
-
         (async () => {
             try {
-                await Purchases.configure({ apiKey: 'goog_YzOjiXxynASmcCsZxbWZrwrQQtQ' });
+                const apiKey = Platform.OS === 'ios'
+                    ? 'appl_RWBsdLMqRcNHcGTSdLmHhKkjpMp'
+                    : 'goog_YzOjiXxynASmcCsZxbWZrwrQQtQ';
+                await Purchases.configure({ apiKey });
             } catch (error: any) {
                 console.warn("Failed to check permission on startup");
             }
@@ -83,8 +79,6 @@ export default function App() {
     }, [])
 
     useEffect(() => {
-        if (Platform.OS !== 'android') return;
-
         const setUpUserData = async () => {
             try {
                 const appUserId = await Purchases.getAppUserID();
@@ -95,13 +89,11 @@ export default function App() {
 
                 const deviceData = await getDeviceInfo(appUserId);
 
-                const imagesRemaining = deviceData.images_remaining;
                 const wordsRemaining = deviceData.words_remaining;
 
                 setUserData({
                     appUserId,
                     isSubscribed,
-                    imagesRemaining,
                     wordsRemaining
                 })
             } catch (error: any) {
@@ -180,6 +172,15 @@ export default function App() {
                             component={SettingsScreen}
                             options={{
                                 title: "Settings",
+                                headerStyle: { backgroundColor: "#050505" },
+                                headerTintColor: "#fff",
+                            }}
+                        />
+                        <Stack.Screen
+                            name='Licenses'
+                            component={LicensesScreen}
+                            options={{
+                                title: "Open Source Licenses",
                                 headerStyle: { backgroundColor: "#050505" },
                                 headerTintColor: "#fff",
                             }}

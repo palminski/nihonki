@@ -15,10 +15,11 @@ import { AppContext } from "App";
 import UmeboshiChan from "../assets/UmeboshiChan.svg";
 import { colors, withOpacity } from "~/utils/colors";
 
-// Subscriptions aren't wired up on iOS yet, so don't point users at an option that isn't there.
-const SETUP_REQUIRED_MESSAGE = Platform.OS === 'android'
-    ? "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key."
-    : "To start making cards please go to settings and provide an OpenAI API key.";
+// iOS has no BYOK option (removed there — see settingsManager), so only point it at
+// a subscription; Android still offers both.
+const SETUP_REQUIRED_MESSAGE = Platform.OS === 'ios'
+    ? "To start making cards please go to settings and purchase a subscription."
+    : "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.";
 
 export default function AddWordsScreen({ navigation }: { navigation: NavigationProp<any> }) {
     const route = useRoute();
@@ -144,7 +145,7 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                 const { [textToSend]: _, ...rest } = prev
                 return rest
             });
-            alert(error?.message);
+            Alert.alert(error?.message ? error.message : "Something went wrong.");
         }
     }
 

@@ -5,6 +5,7 @@ import { manipulateAsync } from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import TextRecognition, { TextRecognitionScript, TextLine } from "@react-native-ml-kit/text-recognition";
 import TinySegmenter from "~/utils/tinySegmenter";
+import RemainingUsesBadge from "~/components/RemainingUsesBadge";
 import { colors, withOpacity } from "~/utils/colors";
 
 interface CameraOcrViewProps {
@@ -246,6 +247,9 @@ export default function CameraOcrView({ languageId, onWordPress }: CameraOcrView
         return (
             <View style={styles.container}>
                 <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+                <View style={styles.topRightOverlay}>
+                    <RemainingUsesBadge />
+                </View>
                 <View style={styles.captureBar}>
                     <Pressable onPress={handleCapture} style={styles.shutterButton}>
                         <View style={styles.shutterInner} />
@@ -259,6 +263,9 @@ export default function CameraOcrView({ languageId, onWordPress }: CameraOcrView
         <View style={styles.container}>
             <View style={styles.photoContainer} onLayout={handlePhotoLayout}>
                 <Image source={{ uri: photo.uri }} style={styles.photo} resizeMode="contain" />
+                <View style={styles.topRightOverlay}>
+                    <RemainingUsesBadge />
+                </View>
                 {lines.map((line, index) => {
                     const rect = getLineOverlayRect(line);
                     if (!rect) return null;
@@ -347,6 +354,12 @@ const styles = StyleSheet.create({
     },
     camera: {
         flex: 1,
+    },
+    topRightOverlay: {
+        position: "absolute",
+        top: 16,
+        right: 16,
+        zIndex: 10,
     },
     captureBar: {
         position: "absolute",
