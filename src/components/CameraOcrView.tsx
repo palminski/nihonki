@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, View, Text, Pressable, ScrollView, ActivityIndicator, Image, StyleSheet, LayoutChangeEvent } from "react-native";
+import { Animated, View, Pressable, ScrollView, ActivityIndicator, Image, StyleSheet, LayoutChangeEvent } from "react-native";
+import AppText from "~/components/AppText";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { manipulateAsync } from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
@@ -119,7 +120,7 @@ function AnimatedChip({ word, isSent, onPress }: { word: string; isSent: boolean
         <Animated.View style={{ transform: [{ translateX }], opacity }}>
             <Pressable onPress={onPress} style={[styles.chip, isSent && styles.chipSent]}>
                 {isSent && <Ionicons name="checkmark-circle" size={20} color={colors.green400} style={styles.chipSentIcon} />}
-                <Text style={[styles.chipText, isSent && styles.chipTextSent]}>{word}</Text>
+                <AppText style={[styles.chipText, isSent && styles.chipTextSent]}>{word}</AppText>
             </Pressable>
         </Animated.View>
     );
@@ -235,9 +236,9 @@ export default function CameraOcrView({ languageId, onWordPress }: CameraOcrView
     if (!permission.granted) {
         return (
             <View style={styles.centered}>
-                <Text style={styles.permissionText}>Camera access is needed to scan text.</Text>
+                <AppText style={styles.permissionText}>Camera access is needed to scan text.</AppText>
                 <Pressable onPress={requestPermission} style={styles.permissionButton}>
-                    <Text style={styles.permissionButtonText}>Grant Permission</Text>
+                    <AppText style={styles.permissionButtonText}>Grant Permission</AppText>
                 </Pressable>
             </View>
         );
@@ -286,11 +287,11 @@ export default function CameraOcrView({ languageId, onWordPress }: CameraOcrView
 
             <View style={styles.wordBar}>
                 <View style={styles.wordBarHeader}>
-                    <Text style={styles.wordBarTitle}>
+                    <AppText style={styles.wordBarTitle}>
                         {selectedLineIndex === null ? "Tap a highlighted line" : "Tap a word to add it"}
-                    </Text>
+                    </AppText>
                     <Pressable onPress={handleRetake} style={styles.retakeButton}>
-                        <Text style={styles.retakeButtonText}>Retake</Text>
+                        <AppText style={styles.retakeButtonText}>Retake</AppText>
                     </Pressable>
                 </View>
                 <ScrollView
@@ -299,15 +300,15 @@ export default function CameraOcrView({ languageId, onWordPress }: CameraOcrView
                     contentContainerStyle={styles.chipRow}
                 >
                     {selectedLineIndex === null ? (
-                        <Text style={styles.placeholderText}>
+                        <AppText style={styles.placeholderText}>
                             {isRecognizing
                                 ? "Reading text..."
                                 : lines.length === 0
                                     ? "No text found -- try retaking the photo."
                                     : "Tap a highlighted line above"}
-                        </Text>
+                        </AppText>
                     ) : wordCandidates.length === 0 ? (
-                        <Text style={styles.placeholderText}>No words found in this line</Text>
+                        <AppText style={styles.placeholderText}>No words found in this line</AppText>
                     ) : (
                         wordCandidates.map((word, index) => (
                             <AnimatedChip

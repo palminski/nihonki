@@ -23,6 +23,27 @@ export const LANGUAGE_CATALOG: Language[] = [
     { id: "dutch", label: "Dutch", nativeLabel: "Nederlands", icon: "language", flagEmoji: "🇳🇱" },
 ];
 
+// BCP-47 locales for expo-speech, which just forwards to the OS TTS engine (AVSpeechSynthesizer
+// on iOS, Android TextToSpeech) — the engine ignores anything it doesn't recognize, so this only
+// needs to be close enough for it to pick the right voice/pronunciation rules.
+const SPEECH_LOCALES: Record<string, string> = {
+    japanese: "ja-JP",
+    spanish: "es-ES",
+    french: "fr-FR",
+    korean: "ko-KR",
+    mandarin: "zh-CN",
+    cantonese: "zh-HK",
+    german: "de-DE",
+    italian: "it-IT",
+    portuguese: "pt-PT",
+    russian: "ru-RU",
+    dutch: "nl-NL",
+};
+
+export function getSpeechLocale(languageId: string): string {
+    return SPEECH_LOCALES[languageId] ?? "en-US";
+}
+
 const ENABLED_LANGUAGES_KEY = "enabledLanguages";
 const DEFAULT_ENABLED_LANGUAGES = ["japanese"];
 

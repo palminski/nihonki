@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useCallback, useRef, useState } from "react";
+import { View, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
+import { useFocusEffect, useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import SwipeCard, { SwipeCardHandle } from "~/components/SwipeCard";
-import { getCardKey } from "~/utils/deckManager";
+import { getCardKey, loadReviewDeck } from "~/utils/deckManager";
 import { normalizeCard } from "~/utils/cardTypes";
 import { getRandomCardSample, getForgottenCards } from "~/utils/srsManager";
+import { loadAutoPlayAudioSetting } from "~/utils/settingsManager";
 import { colors, withOpacity } from "~/utils/colors";
 
 const RANDOM_SAMPLE_SIZE = 20;
@@ -15,7 +17,7 @@ const RANDOM_SAMPLE_SIZE = 20;
 type ExtraReviewMode = "random" | "forgotten";
 
 export default function ExtraReviewScreen() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<NavigationProp<any>>();
     const route = useRoute();
     const { languageId = "japanese", mode = "random" } =
         (route.params as { languageId?: string; languageLabel?: string; mode?: ExtraReviewMode } | undefined) ?? {};
@@ -42,24 +44,40 @@ export default function ExtraReviewScreen() {
     const [attempt, setAttempt] = useState(0);
     const [loading, setLoading] = useState(true);
     const [isCardFlipped, setIsCardFlipped] = useState(false);
+    const [autoPlayAudio, setAutoPlayAudio] = useState(true);
     const cardRef = useRef<SwipeCardHandle>(null);
+    // Distinguishes the screen's first focus (build the session) from a later refocus —
+    // e.g. returning from editing a card — where the queue/order/undo history should be
+    // left alone and only the edited fields need to be patched in.
+    const hasLoadedRef = useRef(false);
 
-    useEffect(() => {
-        (async () => {
-            setLoading(true);
-            const selected =
-                mode === "forgotten"
-                    ? await getForgottenCards(languageId)
-                    : await getRandomCardSample(languageId, RANDOM_SAMPLE_SIZE);
-            setCards(selected);
-            setQueue(selected);
-            setMissedKeys(new Set());
-            setHistory([]);
-            setAttempt((prev) => prev + 1);
-            setIsCardFlipped(false);
-            setLoading(false);
-        })();
-    }, [languageId, mode]);
+    useFocusEffect(
+        useCallback(() => {
+            (async () => {
+                if (!hasLoadedRef.current) {
+                    hasLoadedRef.current = true;
+                    setLoading(true);
+                    const selected =
+                        mode === "forgotten"
+                            ? await getForgottenCards(languageId)
+                            : await getRandomCardSample(languageId, RANDOM_SAMPLE_SIZE);
+                    setCards(selected);
+                    setQueue(selected);
+                    setMissedKeys(new Set());
+                    setHistory([]);
+                    setAttempt((prev) => prev + 1);
+                    setIsCardFlipped(false);
+                    setAutoPlayAudio(await loadAutoPlayAudioSetting(languageId));
+                    setLoading(false);
+                    return;
+                }
+
+                const deck = await loadReviewDeck(languageId);
+                setCards((prev) => prev.map((card) => deck[getCardKey(card)] ?? card));
+                setQueue((prev) => prev.map((card) => deck[getCardKey(card)] ?? card));
+            })();
+        }, [languageId, mode])
+    );
 
     function handleCorrect() {
         if (queue.length === 0) return;
@@ -123,16 +141,16 @@ export default function ExtraReviewScreen() {
         return (
             <ScreenWrapper>
                 <View style={[styles.centered, { paddingHorizontal: 16 }]}>
-                    <Text style={[styles.emptyText, { marginBottom: 24 }]}>
+                    <AppText style={[styles.emptyText, { marginBottom: 24 }]}>
                         {mode === "forgotten"
                             ? "You haven't missed any cards today!"
                             : "There aren't any cards in this deck yet."}
-                    </Text>
+                    </AppText>
                     <Pressable
                         onPress={() => navigation.goBack()}
                         style={styles.backButton}
                     >
-                        <Text style={styles.backButtonText}>Back</Text>
+                        <AppText style={styles.backButtonText}>Back</AppText>
                     </Pressable>
                 </View>
             </ScreenWrapper>
@@ -144,14 +162,14 @@ export default function ExtraReviewScreen() {
             <ScreenWrapper>
                 <View style={[styles.centered, { paddingHorizontal: 16 }]}>
                     <Ionicons name="checkmark-done-circle-outline" size={56} color="#c084fc80" style={{ marginBottom: 12 }} />
-                    <Text style={[styles.emptyText, { marginBottom: 24 }]}>
+                    <AppText style={[styles.emptyText, { marginBottom: 24 }]}>
                         Done!
-                    </Text>
+                    </AppText>
                     <Pressable
                         onPress={() => navigation.goBack()}
                         style={styles.backButton}
                     >
-                        <Text style={styles.backButtonText}>Back</Text>
+                        <AppText style={styles.backButtonText}>Back</AppText>
                     </Pressable>
                 </View>
             </ScreenWrapper>
@@ -171,12 +189,12 @@ export default function ExtraReviewScreen() {
 
                     <View style={styles.dueCountsBox}>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.red400 }, isCurrentMissed && styles.dueCountActive]}>{remainingCounts.learningCount}</Text>
-                            <Text style={styles.dueCountLabel}>Learning</Text>
+                            <AppText style={[styles.dueCountNumber, { color: colors.red400 }, isCurrentMissed && styles.dueCountActive]}>{remainingCounts.learningCount}</AppText>
+                            <AppText style={styles.dueCountLabel}>Learning</AppText>
                         </View>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.green400 }, !isCurrentMissed && styles.dueCountActive]}>{remainingCounts.reviewCount}</Text>
-                            <Text style={styles.dueCountLabel}>Review</Text>
+                            <AppText style={[styles.dueCountNumber, { color: colors.green400 }, !isCurrentMissed && styles.dueCountActive]}>{remainingCounts.reviewCount}</AppText>
+                            <AppText style={styles.dueCountLabel}>Review</AppText>
                         </View>
                     </View>
 
@@ -197,6 +215,14 @@ export default function ExtraReviewScreen() {
                         onSwipeRight={handleCorrect}
                         onSwipeLeft={handleIncorrect}
                         onFlipChange={setIsCardFlipped}
+                        autoPlayAudio={autoPlayAudio}
+                        onEdit={() =>
+                            navigation.navigate("Edit Card", {
+                                cardKey: getCardKey(currentCard),
+                                vocabWord: currentCard,
+                                languageId,
+                            })
+                        }
                     />
                 </View>
 

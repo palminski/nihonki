@@ -10,6 +10,7 @@ const LEGACY_OPENAI_API_KEY_ASYNC_STORAGE_KEY = "none";
 
 const DECK_KEY_PREFIX = "defaultDeck_";
 const ANKI_ENABLED_KEY_PREFIX = "ankiEnabled_";
+const AUTO_PLAY_AUDIO_KEY_PREFIX = "autoPlayAudio_";
 // Anki settings used to be global (one deck/toggle for the whole app, back when only
 // Japanese existed). Migrated once into the per-language key on first read.
 const LEGACY_DECK_KEY = "defaultDeck";
@@ -101,5 +102,26 @@ export async function loadAnkiEnabledSetting(languageId: string) {
     } catch (error) {
         console.error("Failed To Load Anki Enabled Setting", error);
         return false;
+    }
+}
+
+export async function updateAutoPlayAudioSetting(languageId: string, enabled: boolean) {
+    try {
+        await AsyncStorage.setItem(AUTO_PLAY_AUDIO_KEY_PREFIX + languageId, enabled ? "true" : "false");
+    } catch (error) {
+        console.error("Failed To Save Auto-Play Audio Setting", error);
+    }
+}
+
+// Defaults to on (unset means "never touched this setting") rather than off like the
+// other per-language toggles above, since the user asked for audio-on-flip by default.
+export async function loadAutoPlayAudioSetting(languageId: string) {
+    try {
+        const stored = await AsyncStorage.getItem(AUTO_PLAY_AUDIO_KEY_PREFIX + languageId);
+        if (stored == null) return true;
+        return stored === "true";
+    } catch (error) {
+        console.error("Failed To Load Auto-Play Audio Setting", error);
+        return true;
     }
 }

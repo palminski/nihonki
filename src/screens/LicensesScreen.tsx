@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Pressable, ScrollView, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { colors, withOpacity } from "~/utils/colors";
 import thirdPartyLicenses from "~/data/thirdPartyLicenses.json";
@@ -19,15 +20,15 @@ function LicenseCard({ entry }: { entry: LicenseEntry }) {
         <Pressable onPress={() => setIsOpen(!isOpen)} style={styles.card}>
             <View style={styles.headerRow}>
                 <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.name}>{entry.name}</Text>
-                    <Text style={styles.meta}>v{entry.version} — {entry.license} — {entry.author}</Text>
+                    <AppText style={styles.name}>{entry.name}</AppText>
+                    <AppText style={styles.meta}>v{entry.version} — {entry.license} — {entry.author}</AppText>
                 </View>
-                <Text style={styles.chevron}>{isOpen ? "▼" : "▲"}</Text>
+                <AppText style={styles.chevron}>{isOpen ? "▼" : "▲"}</AppText>
             </View>
             {isOpen && (
-                <Text style={styles.licenseText} selectable>
+                <AppText style={styles.licenseText} selectable>
                     {entry.text}
-                </Text>
+                </AppText>
             )}
         </Pressable>
     );
@@ -39,10 +40,10 @@ export default function LicensesScreen() {
     return (
         <ScreenWrapper>
             <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 40 }}>
-                <Text style={styles.introText}>
+                <AppText style={styles.introText}>
                     Umeboshi is built with the open-source packages below. Tap any entry to view its full
                     license text.
-                </Text>
+                </AppText>
                 {licenses.map((entry) => (
                     <LicenseCard key={entry.name} entry={entry} />
                 ))}

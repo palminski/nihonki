@@ -1,4 +1,6 @@
-import { View, Text, Pressable, Alert, ScrollView, TextInput, ActivityIndicator, Modal, Platform, StyleSheet } from "react-native";
+import { View, Pressable, Alert, ScrollView, ActivityIndicator, Modal, StyleSheet, TextInput } from "react-native";
+import AppText from "~/components/AppText";
+import AppTextInput from "~/components/AppTextInput";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useState, useRef, useEffect, useContext, useCallback } from "react";
 import { loadAPIKeySetting } from "~/utils/settingsManager";
@@ -15,11 +17,7 @@ import { AppContext } from "App";
 import UmeboshiChan from "../assets/UmeboshiChan.svg";
 import { colors, withOpacity } from "~/utils/colors";
 
-// iOS has no BYOK option (removed there — see settingsManager), so only point it at
-// a subscription; Android still offers both.
-const SETUP_REQUIRED_MESSAGE = Platform.OS === 'ios'
-    ? "To start making cards please go to settings and purchase a subscription."
-    : "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.";
+const SETUP_REQUIRED_MESSAGE = "To start making cards please go to settings and either purchase a subscription or provide an OpenAI API key.";
 
 export default function AddWordsScreen({ navigation }: { navigation: NavigationProp<any> }) {
     const route = useRoute();
@@ -203,7 +201,7 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                                         <ActivityIndicator size={50} color={'#A855F7'} />
                                     </View>
                                     <View style={{ marginHorizontal: 'auto' }}>
-                                        <Text style={styles.requestText}>Loading Request For <Text style={{ fontWeight: '600' }}>{key}</Text></Text>
+                                        <AppText style={styles.requestText}>Loading Request For <AppText style={{ fontWeight: '600' }}>{key}</AppText></AppText>
                                     </View>
                                 </View>
                             </View>
@@ -224,7 +222,7 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                             </>
                             :
                             <View>
-                                <Text style={styles.emptyStateText}>Translated Words Will Appear Here</Text>
+                                <AppText style={styles.emptyStateText}>Translated Words Will Appear Here</AppText>
                             </View>
                     }
 
@@ -240,24 +238,25 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                         <Pressable onPress={() => navigation.navigate("Edit Card", { languageId })}>
                             <Ionicons name="create-outline" size={30} color={"#fff"} />
                         </Pressable>
-                        <Text style={styles.bottomBarLabel}>New Card</Text>
+                        <AppText style={styles.bottomBarLabel}>New Card</AppText>
                     </View>
                     <View style={styles.bottomBarButton}>
                         <Pressable onPress={() => navigation.navigate("Scan Text", { languageId, languageLabel, onWordPress: handleTextSubmit })}>
                             <Ionicons name="camera" size={50} color={"#fff"} />
                         </Pressable>
-                        <Text style={styles.bottomBarLabel}>Scan Text</Text>
+                        <AppText style={styles.bottomBarLabel}>Scan Text</AppText>
                     </View>
                     <View style={styles.bottomBarButton}>
                         <Pressable onPress={handleEnterText}>
                             <Ionicons name="sparkles-outline" size={30} color={"#fff"} />
                             {(userData.appUserId && !userData.isSubscribed && !hasKey) &&
                                 <View style={[styles.badge, { top: -4, right: -8, width: 20, height: 20 }]}>
-                                    <Text style={[styles.badgeText, { fontSize: 14 }]}>{userData.wordsRemaining}</Text>
+                                    {/* Fixed scale — this is a tiny fixed-size circle with no room to grow. */}
+                                    <AppText style={[styles.badgeText, { fontSize: 14 }]} allowFontScaling={false}>{userData.wordsRemaining}</AppText>
                                 </View>
                             }
                         </Pressable>
-                        <Text style={styles.bottomBarLabel}>Enter Word</Text>
+                        <AppText style={styles.bottomBarLabel}>Enter Word</AppText>
                     </View>
                 </View>
             </View>
@@ -271,27 +270,27 @@ export default function AddWordsScreen({ navigation }: { navigation: NavigationP
                 <Pressable style={styles.modalBackdrop} onPress={handleCloseEnterWordModal}>
                     <Pressable style={styles.modalCard} onPress={() => { }}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Enter a Word</Text>
+                            <AppText style={styles.modalTitle}>Enter a Word</AppText>
                             <Pressable onPress={handleCloseEnterWordModal}>
                                 <Ionicons name="close" size={24} color={colors.white} />
                             </Pressable>
                         </View>
                         <View style={styles.textEntryRow}>
-                            <TextInput
+                            <AppTextInput
                                 onSubmitEditing={() => { handleTextSubmit(inputText); setIsEnterWordModalVisible(false); }}
                                 ref={textInputRef}
                                 style={styles.textEntryInput}
                                 placeholderTextColor={withOpacity(colors.purple300, 0.5)}
                                 value={inputText}
                                 onChangeText={(text) => HandleFormChange(text)}
-                                placeholder='言葉こちら'
+                                placeholder={ isJapanese ? '言葉こちら' : "Enter Word Here" }
                             />
                             <View style={{ justifyContent: 'flex-end' }}>
                                 <Pressable
                                     onPress={() => { handleTextSubmit(inputText); setIsEnterWordModalVisible(false); }}
                                     style={styles.submitButton}
                                 >
-                                    <Text style={{ color: colors.white }}>Submit</Text>
+                                    <AppText style={{ color: colors.white }}>Submit</AppText>
                                 </Pressable>
                             </View>
                         </View>

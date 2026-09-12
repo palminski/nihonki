@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Pressable, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import { useFocusEffect, useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { loadReviewDeck } from "~/utils/deckManager";
@@ -58,9 +59,9 @@ export default function CardListScreen() {
         return (
             <ScreenWrapper>
                 <View style={[styles.centered, { paddingHorizontal: 16 }]}>
-                    <Text style={styles.emptyText}>
+                    <AppText style={styles.emptyText}>
                         No cards in your deck yet.{"\n"}Add some from Add Words!
-                    </Text>
+                    </AppText>
                 </View>
             </ScreenWrapper>
         );
@@ -71,16 +72,16 @@ export default function CardListScreen() {
             <View style={styles.container}>
                 {languageId === "japanese" ? (
                     <View style={styles.headerRow}>
-                        <Text style={[styles.headerText, { width: 70 }]}>Kanji</Text>
-                        <Text style={[styles.headerText, { width: 90 }]}>Kana</Text>
-                        <Text style={[styles.headerText, { flex: 1 }]}>Meaning</Text>
-                        <Text style={[styles.headerText, { width: 50, textAlign: 'right' }]}>Next</Text>
+                        <AppText style={[styles.headerText, { width: 70 }]}>Kanji</AppText>
+                        <AppText style={[styles.headerText, { width: 90 }]}>Kana</AppText>
+                        <AppText style={[styles.headerText, { flex: 1 }]}>Meaning</AppText>
+                        <AppText style={[styles.headerText, { width: 50, textAlign: 'right' }]}>Next</AppText>
                     </View>
                 ) : (
                     <View style={styles.headerRow}>
-                        <Text style={[styles.headerText, { width: 110 }]}>Word</Text>
-                        <Text style={[styles.headerText, { flex: 1 }]}>Meaning</Text>
-                        <Text style={[styles.headerText, { width: 50, textAlign: 'right' }]}>Next</Text>
+                        <AppText style={[styles.headerText, { width: 110 }]}>Word</AppText>
+                        <AppText style={[styles.headerText, { flex: 1 }]}>Meaning</AppText>
+                        <AppText style={[styles.headerText, { width: 50, textAlign: 'right' }]}>Next</AppText>
                     </View>
                 )}
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
@@ -92,16 +93,16 @@ export default function CardListScreen() {
                         >
                             {isJapaneseCard(card) ? (
                                 <>
-                                    <Text style={[styles.cardText, { width: 70 }]}>{card.kanji}</Text>
-                                    <Text style={[styles.cardSubText, { width: 90 }]}>{card.kana}</Text>
+                                    <AppText style={[styles.cardText, { width: 70 }]}>{card.kanji}</AppText>
+                                    <AppText style={[styles.cardSubText, { width: 90 }]}>{card.kana}</AppText>
                                 </>
                             ) : (
-                                <Text style={[styles.cardText, { width: 110 }]}>{card.word}</Text>
+                                <AppText style={[styles.cardText, { width: 110 }]}>{card.word}</AppText>
                             )}
-                            <Text style={[styles.cardSubText, { flex: 1 }]} numberOfLines={1}>{card.meaning}</Text>
-                            <Text style={[styles.cardText, { width: 50, fontSize: 13, textAlign: 'right', color: getNextDueInfo(card).color }]}>
+                            <AppText style={[styles.cardSubText, { flex: 1 }]} numberOfLines={1}>{card.meaning}</AppText>
+                            <AppText style={[styles.cardText, { width: 50, fontSize: 13, textAlign: 'right', color: getNextDueInfo(card).color }]}>
                                 {getNextDueInfo(card).label}
-                            </Text>
+                            </AppText>
                         </Pressable>
                     ))}
                 </ScrollView>

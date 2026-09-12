@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import { colors, withOpacity } from "~/utils/colors";
 
 interface ReviewForecastChartProps {
@@ -26,12 +27,12 @@ export default function ReviewForecastChart({ counts }: ReviewForecastChartProps
 
     return (
         <View>
-            <Text style={styles.title}>Upcoming Reviews</Text>
+            <AppText style={styles.title}>Upcoming Reviews</AppText>
             <View style={styles.chartRow}>
                 <View style={styles.yAxisColumn}>
                     <View style={styles.yAxisTicks}>
                         {ticks.slice().reverse().map((tick) => (
-                            <Text key={tick} style={styles.yAxisLabel}>{tick}</Text>
+                            <AppText key={tick} style={styles.yAxisLabel}>{tick}</AppText>
                         ))}
                     </View>
                 </View>
@@ -47,7 +48,7 @@ export default function ReviewForecastChart({ counts }: ReviewForecastChartProps
                                     ]}
                                 />
                             </View>
-                            <Text style={styles.barLabel}>{index % 5 === 0 ? String(index) : ""}</Text>
+                            <AppText style={styles.barLabel}>{index % 5 === 0 ? String(index) : ""}</AppText>
                         </View>
                     ))}
                 </View>

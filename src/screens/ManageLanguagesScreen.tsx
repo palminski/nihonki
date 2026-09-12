@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, Switch, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Switch, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { useFocusEffect } from "@react-navigation/native";
 import { LANGUAGE_CATALOG, loadEnabledLanguages, updateEnabledLanguages } from "~/utils/languageManager";
@@ -38,17 +39,17 @@ export default function ManageLanguagesScreen() {
     return (
         <ScreenWrapper>
             <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 20 }}>
-                <Text style={styles.helpText}>
+                <AppText style={styles.helpText}>
                     Toggle which languages show up on your language select screen. Turning a language off will
                     not delete any cards you've already made for it.
-                </Text>
+                </AppText>
                 {LANGUAGE_CATALOG.map((language) => (
                     <View key={language.id} style={styles.languageRow}>
                         <View style={styles.languageInfo}>
-                            <Text style={{ fontSize: 28 }}>{language.flagEmoji}</Text>
+                            <AppText style={{ fontSize: 28 }}>{language.flagEmoji}</AppText>
                             <View style={{ marginLeft: 12 }}>
-                                <Text style={styles.languageLabel}>{language.label}</Text>
-                                <Text style={styles.languageNativeLabel}>{language.nativeLabel}</Text>
+                                <AppText style={styles.languageLabel}>{language.label}</AppText>
+                                <AppText style={styles.languageNativeLabel}>{language.nativeLabel}</AppText>
                             </View>
                         </View>
                         <Switch

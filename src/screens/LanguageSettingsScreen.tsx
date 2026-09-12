@@ -1,9 +1,11 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, Switch, Platform, StyleSheet } from "react-native";
+import { View, Pressable, Alert, ScrollView, ActivityIndicator, Switch, Platform, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
+import AppTextInput from "~/components/AppTextInput";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import ScreenWrapper from "~/components/ScreenWrapper";
-import { loadDeckSetting, updateDeckSetting, loadAnkiEnabledSetting, updateAnkiEnabledSetting } from "~/utils/settingsManager";
+import { loadDeckSetting, updateDeckSetting, loadAnkiEnabledSetting, updateAnkiEnabledSetting, loadAutoPlayAudioSetting, updateAutoPlayAudioSetting } from "~/utils/settingsManager";
 import { loadNewCardsPerDay, updateNewCardsPerDay, DEFAULT_NEW_CARDS_PER_DAY } from "~/utils/srsManager";
 import { colors, withOpacity } from "~/utils/colors";
 
@@ -21,6 +23,7 @@ export default function LanguageSettingsScreen() {
         newCardsPerDay: String(DEFAULT_NEW_CARDS_PER_DAY),
         ankiEnabled: false,
         insertDeck: "",
+        autoPlayAudio: true,
     });
 
     useFocusEffect(
@@ -30,10 +33,12 @@ export default function LanguageSettingsScreen() {
                 const newCardsPerDay = await loadNewCardsPerDay(languageId);
                 const ankiEnabled = showAnkiSettings ? await loadAnkiEnabledSetting(languageId) : false;
                 const insertDeck = showAnkiSettings ? await loadDeckSetting(languageId) : "";
+                const autoPlayAudio = await loadAutoPlayAudioSetting(languageId);
                 setSettingForm({
                     newCardsPerDay: String(newCardsPerDay),
                     ankiEnabled,
                     insertDeck: insertDeck ?? "",
+                    autoPlayAudio,
                 });
                 setLoading(false);
             })();
@@ -61,6 +66,8 @@ export default function LanguageSettingsScreen() {
             await updateDeckSetting(languageId, settingForm.insertDeck);
         }
 
+        await updateAutoPlayAudioSetting(languageId, settingForm.autoPlayAudio);
+
         setSaving(false);
         Alert.alert("Setting Saved!");
     }
@@ -78,11 +85,11 @@ export default function LanguageSettingsScreen() {
     return (
         <ScreenWrapper>
             <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 40 }}>
-                <Text style={styles.heading}>{languageLabel} Settings</Text>
+                <AppText style={styles.heading}>{languageLabel} Settings</AppText>
 
                 <View style={{ marginBottom: 12 }}>
                     <View style={styles.row}>
-                        <Text style={styles.label}>New Cards Per Day</Text>
+                        <AppText style={styles.label}>New Cards Per Day</AppText>
                         <Pressable
                             onPress={() =>
                                 Alert.alert(
@@ -95,7 +102,7 @@ export default function LanguageSettingsScreen() {
                             <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
                         </Pressable>
                     </View>
-                    <TextInput
+                    <AppTextInput
                         style={styles.textInput}
                         placeholderTextColor={withOpacity(colors.purple300, 0.5)}
                         value={settingForm.newCardsPerDay}
@@ -105,12 +112,37 @@ export default function LanguageSettingsScreen() {
                     />
                 </View>
 
+                <View style={{ marginBottom: 12 }}>
+                    <View style={[styles.row, { justifyContent: 'space-between' }]}>
+                        <View style={styles.row}>
+                            <AppText style={styles.label}>Auto-Play Audio on Flip</AppText>
+                            <Pressable
+                                onPress={() =>
+                                    Alert.alert(
+                                        "Auto-Play Audio on Flip",
+                                        "When enabled, flipping a card automatically reads the word and example sentence aloud. You can always play it manually with the speaker button on the card."
+                                    )
+                                }
+                                style={{ alignItems: 'center' }}
+                            >
+                                <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
+                            </Pressable>
+                        </View>
+                        <Switch
+                            value={settingForm.autoPlayAudio}
+                            onValueChange={(value) => handleFormChange("autoPlayAudio", value)}
+                            trackColor={{ false: "#3f3f46", true: "#7e22ce" }}
+                            thumbColor={"#e6b3ff"}
+                        />
+                    </View>
+                </View>
+
                 {showAnkiSettings && (
                     <>
                         <View style={{ marginBottom: 12 }}>
                             <View style={[styles.row, { justifyContent: 'space-between' }]}>
                                 <View style={styles.row}>
-                                    <Text style={styles.label}>Enable AnkiDroid Communication</Text>
+                                    <AppText style={styles.label}>Enable AnkiDroid Communication</AppText>
                                     <Pressable
                                         onPress={() =>
                                             Alert.alert(
@@ -135,7 +167,7 @@ export default function LanguageSettingsScreen() {
                         {settingForm.ankiEnabled && (
                             <View style={{ marginBottom: 12 }}>
                                 <View style={styles.row}>
-                                    <Text style={styles.label}>Anki Deck To Insert Into</Text>
+                                    <AppText style={styles.label}>Anki Deck To Insert Into</AppText>
                                     <Pressable
                                         onPress={() =>
                                             Alert.alert(
@@ -148,7 +180,7 @@ export default function LanguageSettingsScreen() {
                                         <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
                                     </Pressable>
                                 </View>
-                                <TextInput
+                                <AppTextInput
                                     style={styles.textInput}
                                     placeholderTextColor={withOpacity(colors.purple300, 0.5)}
                                     value={settingForm.insertDeck}
@@ -165,7 +197,7 @@ export default function LanguageSettingsScreen() {
                     disabled={saving}
                     style={styles.saveButton}
                 >
-                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save Settings"}</Text>
+                    <AppText style={styles.saveButtonText}>{saving ? "Saving..." : "Save Settings"}</AppText>
                 </Pressable>
             </ScrollView>
         </ScreenWrapper>

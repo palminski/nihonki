@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import { AppContext } from "App";
 import { loadAPIKeySetting } from "~/utils/settingsManager";
 import { colors, withOpacity } from "~/utils/colors";
@@ -24,7 +25,9 @@ export default function RemainingUsesBadge() {
 
     return (
         <View style={styles.badge}>
-            <Text style={styles.badgeText}>{Math.max(0, userData.wordsRemaining)} left</Text>
+            {/* Fixed scale regardless of the device's text-size setting — this is a small
+                status readout, not something that needs to stay perfectly legible. */}
+            <AppText style={styles.badgeText} allowFontScaling={false}>{Math.max(0, userData.wordsRemaining)} left</AppText>
         </View>
     );
 }

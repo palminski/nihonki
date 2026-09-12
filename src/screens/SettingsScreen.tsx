@@ -1,4 +1,6 @@
-import { View, Text, Pressable, TextInput, Alert, ScrollView, ActivityIndicator, Linking, Platform, StyleSheet } from "react-native";
+import { View, Pressable, Alert, ScrollView, ActivityIndicator, Linking, Platform, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
+import AppTextInput from "~/components/AppTextInput";
 import { useEffect, useState, useCallback, useContext } from "react";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { loadAPIKeySetting, updateAPIKeySetting } from "~/utils/settingsManager";
@@ -59,11 +61,7 @@ export default function SettingsScreen() {
     const handleFormSubmit = async () => {
         if (loading) return;
         setLoading(true);
-        // Apple builds don't offer BYOK at all (see the hidden section below) — guarded
-        // here too so no code path can write a key on iOS, not just the UI that's hidden.
-        if (Platform.OS !== 'ios') {
-            await updateAPIKeySetting(settingForm.apiKey);
-        }
+        await updateAPIKeySetting(settingForm.apiKey);
         setLoading(false);
         Alert.alert("Setting Saved!")
     }
@@ -102,33 +100,27 @@ export default function SettingsScreen() {
                     showsVerticalScrollIndicator={false}
                 >
 
-                    {
-                        // Apple builds don't offer bring-your-own-key at all — not shown,
-                        // and handleFormSubmit above won't save one even if this were
-                        // somehow bypassed.
-                        Platform.OS !== 'ios' &&
-                        <View style={{ marginBottom: 12 }}>
+                    <View style={{ marginBottom: 12 }}>
 
-                            <View style={styles.row}>
-                                <Text style={styles.label}>
-                                    OpenAi API Key
-                                </Text>
-                                <Pressable onPress={() => Alert.alert("OpenAi API Key", "If you have your own API key for open AI you can use it instead of a subscription. Your key is never sent to our servers. It is stored on your device and used to communicate with OpenAi directly.")} style={{ alignItems: 'center' }}>
-                                    <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
-                                </Pressable>
-                            </View>
-
-
-                            <TextInput
-                                secureTextEntry={true}
-                                style={styles.textInput}
-                                placeholderTextColor={withOpacity(colors.purple300, 0.5)}
-                                value={settingForm.apiKey}
-                                onChangeText={(text) => handleFormChange('apiKey', text)}
-                                placeholder='Personal Api Key'
-                            />
+                        <View style={styles.row}>
+                            <AppText style={styles.label}>
+                                OpenAi API Key
+                            </AppText>
+                            <Pressable onPress={() => Alert.alert("OpenAi API Key", "If you have your own API key for open AI you can use it instead of a subscription. Your key is never sent to our servers. It is stored on your device and used to communicate with OpenAi directly.")} style={{ alignItems: 'center' }}>
+                                <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
+                            </Pressable>
                         </View>
-                    }
+
+
+                        <AppTextInput
+                            secureTextEntry={true}
+                            style={styles.textInput}
+                            placeholderTextColor={withOpacity(colors.purple300, 0.5)}
+                            value={settingForm.apiKey}
+                            onChangeText={(text) => handleFormChange('apiKey', text)}
+                            placeholder='Personal Api Key'
+                        />
+                    </View>
 
 
                     {
@@ -143,27 +135,27 @@ export default function SettingsScreen() {
 
                                     <View style={{ marginBottom: 24 }}>
                                         <Pressable onPress={() => purchaseSubscription()} style={styles.actionButton}>
-                                            <Text style={styles.actionButtonText}>Purchase Subscription ($5.99 / month)</Text>
+                                            <AppText style={styles.actionButtonText}>Purchase Subscription ($5.99 / month)</AppText>
                                         </Pressable>
                                     </View>
 
                                     <View style={{ marginBottom: 12 }}>
                                         <Pressable onPress={() => restorePurchase()} style={styles.actionButton}>
-                                            <Text style={styles.actionButtonText}>Restore Purchase</Text>
+                                            <AppText style={styles.actionButtonText}>Restore Purchase</AppText>
                                         </Pressable>
                                     </View>
 
                                     <View style={{ marginBottom: 12 }}>
-                                        <Text style={styles.disclosureText}>
+                                        <AppText style={styles.disclosureText}>
                                             Subscription automatically renews for $5.99/month unless canceled at least 24 hours before the end of the current period. Manage or cancel anytime in your account settings.
-                                        </Text>
+                                        </AppText>
                                         <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}>
                                             <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
-                                                <Text style={styles.disclosureLink}>Privacy Policy</Text>
+                                                <AppText style={styles.disclosureLink}>Privacy Policy</AppText>
                                             </Pressable>
-                                            <Text style={styles.disclosureText}>   •   </Text>
+                                            <AppText style={styles.disclosureText}>   •   </AppText>
                                             <Pressable onPress={() => Linking.openURL(TERMS_OF_USE_URL)}>
-                                                <Text style={styles.disclosureLink}>Terms of Use</Text>
+                                                <AppText style={styles.disclosureLink}>Terms of Use</AppText>
                                             </Pressable>
                                         </View>
                                     </View>
@@ -173,16 +165,16 @@ export default function SettingsScreen() {
                                     {
                                         !loading &&
                                         <View style={{ marginBottom: 12 }}>
-                                            <Text style={styles.subscribedText}>
+                                            <AppText style={styles.subscribedText}>
                                                 You are currently subscribed!
-                                            </Text>
+                                            </AppText>
 
                                             <Pressable onPress={() => Linking.openURL(
                                                 Platform.OS === 'ios'
                                                     ? "https://apps.apple.com/account/subscriptions"
                                                     : "https://play.google.com/store/account/subscriptions"
                                             )}>
-                                                <Text style={[styles.subscribedText, { textDecorationLine: 'underline' }]}>Manage Subscriptions Here!</Text>
+                                                <AppText style={[styles.subscribedText, { textDecorationLine: 'underline' }]}>Manage Subscriptions Here!</AppText>
                                             </Pressable>
                                         </View>
                                     }
@@ -193,15 +185,15 @@ export default function SettingsScreen() {
 
 
                     <Pressable onPress={() => navigation.navigate("Licenses")} style={{ marginBottom: 12 }}>
-                        <Text style={styles.disclosureLink}>Open Source Licenses</Text>
+                        <AppText style={styles.disclosureLink}>Open Source Licenses</AppText>
                     </Pressable>
 
                     {
                         debugResponse &&
-                        <Text style={{ color: colors.white }}>
+                        <AppText style={{ color: colors.white }}>
                             Debug Response:{'\n'}
                             {debugResponse}
-                        </Text>
+                        </AppText>
                     }
 
 
@@ -211,7 +203,7 @@ export default function SettingsScreen() {
                 <View style={styles.bottomBar}>
                     <Pressable onPress={handleFormSubmit} style={styles.bottomBarButton}>
                         <Ionicons name="save-outline" size={50} color={"#fff"} />
-                        <Text style={styles.bottomBarButtonText}>Save Settings</Text>
+                        <AppText style={styles.bottomBarButtonText}>Save Settings</AppText>
                     </Pressable>
                 </View>
             </View>

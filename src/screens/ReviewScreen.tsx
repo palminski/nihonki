@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import { useFocusEffect, useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
@@ -8,6 +9,7 @@ import SwipeCard, { SwipeCardHandle } from "~/components/SwipeCard";
 import { loadReviewDeck, getCardKey } from "~/utils/deckManager";
 import { normalizeCard } from "~/utils/cardTypes";
 import { getDueQueue, gradeCard, undoGradeCard, getDueCountsFromCards, getCardQueueCategory, pickNextCard, previewNextDue, formatInterval } from "~/utils/srsManager";
+import { loadAutoPlayAudioSetting } from "~/utils/settingsManager";
 import { colors, withOpacity } from "~/utils/colors";
 
 interface LastAction {
@@ -36,6 +38,7 @@ export default function ReviewScreen() {
     const [actionStack, setActionStack] = useState<LastAction[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCardFlipped, setIsCardFlipped] = useState(false);
+    const [autoPlayAudio, setAutoPlayAudio] = useState(true);
     const cardRef = useRef<SwipeCardHandle>(null);
 
     useFocusEffect(
@@ -50,6 +53,7 @@ export default function ReviewScreen() {
                 setAttempt((prev) => prev + 1);
                 setActionStack([]);
                 setIsCardFlipped(false);
+                setAutoPlayAudio(await loadAutoPlayAudioSetting(languageId));
                 setLoading(false);
             })();
 
@@ -131,9 +135,9 @@ export default function ReviewScreen() {
         return (
             <ScreenWrapper>
                 <View style={[styles.centered, { paddingHorizontal: 16 }]}>
-                    <Text style={styles.emptyText}>
+                    <AppText style={styles.emptyText}>
                         No cards in your deck yet.{"\n"}Add some from Add Words!
-                    </Text>
+                    </AppText>
                 </View>
             </ScreenWrapper>
         );
@@ -144,29 +148,29 @@ export default function ReviewScreen() {
             <ScreenWrapper>
                 <View style={[styles.centered, { paddingHorizontal: 16 }]}>
                     <Ionicons name="checkmark-done-circle-outline" size={56} color="#c084fc80" style={{ marginBottom: 12 }} />
-                    <Text style={[styles.emptyText, { marginBottom: 24 }]}>
+                    <AppText style={[styles.emptyText, { marginBottom: 24 }]}>
                         You're all caught up!{"\n"}Nothing due right now — check back later.
-                    </Text>
+                    </AppText>
 
                     <Pressable
                         onPress={() => navigation.navigate("Extra Review", { languageId, languageLabel, mode: "random" })}
                         style={[styles.extraReviewButton, { marginBottom: 12 }]}
                     >
-                        <Text style={styles.extraReviewButtonText}>Review Random Set</Text>
+                        <AppText style={styles.extraReviewButtonText}>Review Random Set</AppText>
                     </Pressable>
 
                     <Pressable
                         onPress={() => navigation.navigate("Extra Review", { languageId, languageLabel, mode: "forgotten" })}
                         style={[styles.extraReviewButton, { marginBottom: 24 }]}
                     >
-                        <Text style={styles.extraReviewButtonText}>Review Forgotten Cards</Text>
+                        <AppText style={styles.extraReviewButtonText}>Review Forgotten Cards</AppText>
                     </Pressable>
 
                     <Pressable
                         onPress={() => navigation.goBack()}
                         style={styles.backButton}
                     >
-                        <Text style={styles.backButtonText}>Back</Text>
+                        <AppText style={styles.backButtonText}>Back</AppText>
                     </Pressable>
                 </View>
             </ScreenWrapper>
@@ -186,16 +190,16 @@ export default function ReviewScreen() {
 
                     <View style={styles.dueCountsBox}>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.blue400 }, currentCategory === "new" && styles.dueCountActive]}>{remainingCounts.newCount}</Text>
-                            <Text style={styles.dueCountLabel}>New</Text>
+                            <AppText style={[styles.dueCountNumber, { color: colors.blue400 }, currentCategory === "new" && styles.dueCountActive]}>{remainingCounts.newCount}</AppText>
+                            <AppText style={styles.dueCountLabel}>New</AppText>
                         </View>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.red400 }, currentCategory === "learning" && styles.dueCountActive]}>{remainingCounts.learningCount}</Text>
-                            <Text style={styles.dueCountLabel}>Learning</Text>
+                            <AppText style={[styles.dueCountNumber, { color: colors.red400 }, currentCategory === "learning" && styles.dueCountActive]}>{remainingCounts.learningCount}</AppText>
+                            <AppText style={styles.dueCountLabel}>Learning</AppText>
                         </View>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.green400 }, currentCategory === "review" && styles.dueCountActive]}>{remainingCounts.reviewCount}</Text>
-                            <Text style={styles.dueCountLabel}>Review</Text>
+                            <AppText style={[styles.dueCountNumber, { color: colors.green400 }, currentCategory === "review" && styles.dueCountActive]}>{remainingCounts.reviewCount}</AppText>
+                            <AppText style={styles.dueCountLabel}>Review</AppText>
                         </View>
                     </View>
 
@@ -217,6 +221,14 @@ export default function ReviewScreen() {
                         onSwipeLeft={() => handleGrade(false)}
                         onFlipChange={setIsCardFlipped}
                         preview={preview}
+                        autoPlayAudio={autoPlayAudio}
+                        onEdit={() =>
+                            navigation.navigate("Edit Card", {
+                                cardKey: getCardKey(currentCard),
+                                vocabWord: currentCard,
+                                languageId,
+                            })
+                        }
                     />
                 </View>
 
@@ -229,7 +241,7 @@ export default function ReviewScreen() {
                         <View style={[styles.gradeCircle, { borderColor: colors.red500 }]}>
                             <Ionicons name="close" size={32} color="#f87171" />
                         </View>
-                        {preview && <Text style={[styles.intervalText, { color: colors.red400 }]}>{formatInterval(preview.again)}</Text>}
+                        {preview && <AppText style={[styles.intervalText, { color: colors.red400 }]}>{formatInterval(preview.again)}</AppText>}
                     </Pressable>
                     <Pressable onPress={() => cardRef.current?.flip()} style={styles.gradeButton}>
                         <View style={[styles.gradeCircle, { borderColor: colors.purple500, padding: 24 }]}>
@@ -244,7 +256,7 @@ export default function ReviewScreen() {
                         <View style={[styles.gradeCircle, { borderColor: colors.green500 }]}>
                             <Ionicons name="checkmark" size={32} color="#4ade80" />
                         </View>
-                        {preview && <Text style={[styles.intervalText, { color: colors.green400 }]}>{formatInterval(preview.good)}</Text>}
+                        {preview && <AppText style={[styles.intervalText, { color: colors.green400 }]}>{formatInterval(preview.good)}</AppText>}
                     </Pressable>
                 </View>
             </View>

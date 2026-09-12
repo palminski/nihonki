@@ -1,4 +1,5 @@
-import { View, Text, Pressable, NativeModules, Alert, Platform, StyleSheet } from "react-native";
+import { View, Pressable, NativeModules, Alert, Platform, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import { useState } from "react";
 import { useEffect, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -78,12 +79,12 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
 
     const addToDeckButton = !isInDeck ? (
         <Pressable onPress={() => handleAddToDeck(vocabWord)} style={[styles.actionButton, ankiSendAvailable && { flex: 1, justifyContent: 'center' }]}>
-            <Text style={styles.actionButtonText}>Add to Deck</Text>
+            <AppText style={styles.actionButtonText}>Add to Deck</AppText>
             <Ionicons style={{ marginLeft: 8 }} name="albums-outline" size={12} color={"#fff"} />
         </Pressable>
     ) : (
         <Pressable style={[styles.doneButton, ankiSendAvailable && { flex: 1, justifyContent: 'center' }]}>
-            <Text style={styles.doneButtonText}>In Deck!</Text>
+            <AppText style={styles.doneButtonText}>In Deck!</AppText>
             <Ionicons style={{ marginLeft: 8 }} name="checkmark-outline" size={12} color={"#C084FC"} />
         </Pressable>
     );
@@ -92,12 +93,12 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
         <View style={styles.card}>
             <View style={styles.headerRow}>
                 <Pressable onPress={() => setIsOpen(!isOpen)} style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.headwordLine}>
-                        <Text style={styles.headword}>{headword}</Text> - <Text style={styles.headword}>[ {subheading} ] {isOpen ? "▼" : "▲"}</Text>
-                    </Text>
-                    <Text style={styles.meaningText}>
+                    <AppText style={styles.headwordLine}>
+                        <AppText style={styles.headword}>{headword}</AppText> - <AppText style={styles.headword}>[ {subheading} ] {isOpen ? "▼" : "▲"}</AppText>
+                    </AppText>
+                    <AppText style={styles.meaningText}>
                         {vocabWord.meaning}
-                    </Text>
+                    </AppText>
                 </Pressable>
                 {!ankiSendAvailable && (
                     <View style={{ alignItems: 'flex-end' }}>
@@ -112,24 +113,24 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
                     <View style={{ marginBottom: 8 }}>
                         {isJapaneseCard(vocabWord) ? (
                             <>
-                                <Text style={styles.detailText}><Text style={styles.detailLabel}>Kanji: </Text>{vocabWord.kanji}</Text>
-                                <Text style={styles.detailText}><Text style={styles.detailLabel}>Reading: </Text>{vocabWord.kana}</Text>
+                                <AppText style={styles.detailText}><AppText style={styles.detailLabel}>Kanji: </AppText>{vocabWord.kanji}</AppText>
+                                <AppText style={styles.detailText}><AppText style={styles.detailLabel}>Reading: </AppText>{vocabWord.kana}</AppText>
                             </>
                         ) : isRomanizedCard(vocabWord) ? (
                             <>
-                                <Text style={styles.detailText}><Text style={styles.detailLabel}>Word: </Text>{vocabWord.word}</Text>
-                                <Text style={styles.detailText}><Text style={styles.detailLabel}>Pronunciation: </Text>{vocabWord.pronunciation}</Text>
+                                <AppText style={styles.detailText}><AppText style={styles.detailLabel}>Word: </AppText>{vocabWord.word}</AppText>
+                                <AppText style={styles.detailText}><AppText style={styles.detailLabel}>Pronunciation: </AppText>{vocabWord.pronunciation}</AppText>
                             </>
                         ) : (
-                            <Text style={styles.detailText}><Text style={styles.detailLabel}>Word: </Text>{vocabWord.word}</Text>
+                            <AppText style={styles.detailText}><AppText style={styles.detailLabel}>Word: </AppText>{vocabWord.word}</AppText>
                         )}
-                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Definition: </Text>{vocabWord.meaning}</Text>
-                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Part of Speach: </Text>{vocabWord.partOfSpeech}</Text>
+                        <AppText style={styles.detailText}><AppText style={styles.detailLabel}>Definition: </AppText>{vocabWord.meaning}</AppText>
+                        <AppText style={styles.detailText}><AppText style={styles.detailLabel}>Part of Speach: </AppText>{vocabWord.partOfSpeech}</AppText>
                     </View>
                     <View>
-                        <Text style={styles.exampleLabel}>Example Sentence: </Text>
-                        <Text style={styles.detailText}>{exampleSentence.replace("<b>", "").replace("</b>", "").replace("<span>", "").replace("</span>", "")}</Text>
-                        <Text style={styles.detailText}>{vocabWord.exampleSentenceEnglish}</Text>
+                        <AppText style={styles.exampleLabel}>Example Sentence: </AppText>
+                        <AppText style={styles.detailText}>{exampleSentence.replace("<b>", "").replace("</b>", "").replace("<span>", "").replace("</span>", "")}</AppText>
+                        <AppText style={styles.detailText}>{vocabWord.exampleSentenceEnglish}</AppText>
                     </View>
                 </>
             }
@@ -140,12 +141,12 @@ export default function VocabCard({ vocabWord, hasBeenSent = false, languageId =
                     {
                         !isAdded ?
                             <Pressable onPress={() => handleSendToAnki(vocabWord)} style={[styles.actionButton, { flex: 1, justifyContent: 'center' }]}>
-                                <Text style={styles.actionButtonText}>Send to Anki</Text>
+                                <AppText style={styles.actionButtonText}>Send to Anki</AppText>
                                 <Ionicons style={{ marginLeft: 8 }} name="send-outline" size={12} color={"#fff"} />
                             </Pressable>
                             :
                             <Pressable style={[styles.doneButton, { flex: 1, justifyContent: 'center' }]}>
-                                <Text style={styles.doneButtonText}>Card Added!</Text>
+                                <AppText style={styles.doneButtonText}>Card Added!</AppText>
                                 <Ionicons style={{ marginLeft: 8 }} name="checkmark-outline" size={12} color={"#C084FC"} />
                             </Pressable>
                     }

@@ -15,6 +15,9 @@ export interface JapaneseCard {
     exampleSentenceFurigana: string;
     exampleSentenceKana: string;
     exampleSentenceEnglish: string;
+    // Optional extra info (e.g. verb conjugations) not shown on the card face — surfaced
+    // only via the notes button on the review card back when non-empty.
+    notes?: string;
 }
 
 export interface RomanizedCard {
@@ -26,6 +29,7 @@ export interface RomanizedCard {
     exampleSentence: string;
     exampleSentencePronunciation: string;
     exampleSentenceEnglish: string;
+    notes?: string;
 }
 
 export interface SimpleWordCard {
@@ -35,6 +39,7 @@ export interface SimpleWordCard {
     partOfSpeech: string;
     exampleSentence: string;
     exampleSentenceEnglish: string;
+    notes?: string;
 }
 
 export type VocabCard = JapaneseCard | RomanizedCard | SimpleWordCard;
@@ -71,7 +76,7 @@ export function isRomanizedCard(card: VocabCard): card is RomanizedCard {
     return "pronunciation" in card && !isJapaneseCard(card);
 }
 
-export const JAPANESE_CARD_FIELDS: { key: keyof JapaneseCard; label: string; multiline?: boolean }[] = [
+export const JAPANESE_CARD_FIELDS: { key: keyof JapaneseCard; label: string; multiline?: boolean; optional?: boolean }[] = [
     { key: "kanji", label: "Kanji" },
     { key: "kana", label: "Kana" },
     { key: "furigana", label: "Furigana (e.g. 犬[いぬ])" },
@@ -81,9 +86,10 @@ export const JAPANESE_CARD_FIELDS: { key: keyof JapaneseCard; label: string; mul
     { key: "exampleSentenceFurigana", label: "Example Sentence (Furigana)", multiline: true },
     { key: "exampleSentenceKana", label: "Example Sentence (Kana)", multiline: true },
     { key: "exampleSentenceEnglish", label: "Example Sentence (English)", multiline: true },
+    { key: "notes", label: "Notes (e.g. verb conjugations)", multiline: true, optional: true },
 ];
 
-export const ROMANIZED_CARD_FIELDS: { key: keyof RomanizedCard; label: string; multiline?: boolean }[] = [
+export const ROMANIZED_CARD_FIELDS: { key: keyof RomanizedCard; label: string; multiline?: boolean; optional?: boolean }[] = [
     { key: "word", label: "Word" },
     { key: "pronunciation", label: "Pronunciation (e.g. 你[nǐ]好[hǎo])" },
     { key: "meaning", label: "Meaning" },
@@ -91,14 +97,16 @@ export const ROMANIZED_CARD_FIELDS: { key: keyof RomanizedCard; label: string; m
     { key: "exampleSentence", label: "Example Sentence", multiline: true },
     { key: "exampleSentencePronunciation", label: "Example Sentence (Pronunciation)", multiline: true },
     { key: "exampleSentenceEnglish", label: "Example Sentence (English)", multiline: true },
+    { key: "notes", label: "Notes (e.g. verb conjugations)", multiline: true, optional: true },
 ];
 
-export const SIMPLE_CARD_FIELDS: { key: keyof SimpleWordCard; label: string; multiline?: boolean }[] = [
+export const SIMPLE_CARD_FIELDS: { key: keyof SimpleWordCard; label: string; multiline?: boolean; optional?: boolean }[] = [
     { key: "word", label: "Word" },
     { key: "meaning", label: "Meaning" },
     { key: "partOfSpeech", label: "Part of Speech" },
     { key: "exampleSentence", label: "Example Sentence", multiline: true },
     { key: "exampleSentenceEnglish", label: "Example Sentence (English)", multiline: true },
+    { key: "notes", label: "Notes (e.g. verb conjugations)", multiline: true, optional: true },
 ];
 
 export function getCardFields(languageId: string) {
@@ -109,7 +117,9 @@ export function getCardFields(languageId: string) {
 }
 
 export function getRequiredCardFields(languageId: string): string[] {
-    return getCardFields(languageId).map((field) => field.key as string);
+    return getCardFields(languageId)
+        .filter((field) => !field.optional)
+        .map((field) => field.key as string);
 }
 
 // Normalizes any card shape into the handful of fields the flip-card review UI actually
@@ -123,6 +133,7 @@ export interface NormalizedCardView {
     exampleSentencePlain: string;
     exampleSentenceAnnotated: string | null;
     exampleSentenceEnglish: string;
+    notes: string;
 }
 
 export function normalizeCard(card: VocabCard): NormalizedCardView {
@@ -135,6 +146,7 @@ export function normalizeCard(card: VocabCard): NormalizedCardView {
             exampleSentencePlain: card.exampleSentenceKanji,
             exampleSentenceAnnotated: card.exampleSentenceFurigana,
             exampleSentenceEnglish: card.exampleSentenceEnglish,
+            notes: card.notes ?? "",
         };
     }
     if (isRomanizedCard(card)) {
@@ -146,6 +158,7 @@ export function normalizeCard(card: VocabCard): NormalizedCardView {
             exampleSentencePlain: card.exampleSentence,
             exampleSentenceAnnotated: card.exampleSentencePronunciation,
             exampleSentenceEnglish: card.exampleSentenceEnglish,
+            notes: card.notes ?? "",
         };
     }
     return {
@@ -156,5 +169,6 @@ export function normalizeCard(card: VocabCard): NormalizedCardView {
         exampleSentencePlain: card.exampleSentence,
         exampleSentenceAnnotated: null,
         exampleSentenceEnglish: card.exampleSentenceEnglish,
+        notes: card.notes ?? "",
     };
 }

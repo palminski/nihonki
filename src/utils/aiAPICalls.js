@@ -10,7 +10,8 @@ export async function translateWord(word) {
         });
 
         const response = await openai.responses.create({
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
+            reasoning: { effort: "none" },
             input: [
                 { role: "system", content: systemInstructionText },
                 { role: "system", content: singleWordInstructionText },
@@ -40,7 +41,8 @@ export async function translateWordGeneric(word, languageLabel) {
         });
 
         const response = await openai.responses.create({
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
+            reasoning: { effort: "none" },
             input: [
                 { role: "system", content: buildGenericSystemInstructionText(languageLabel) },
                 { role: "system", content: buildGenericSingleWordInstructionText(languageLabel) },
@@ -70,7 +72,8 @@ export async function translateWordRomanized(word, languageLabel, romanizationSy
         });
 
         const response = await openai.responses.create({
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
+            reasoning: { effort: "none" },
             input: [
                 { role: "system", content: buildRomanizedSystemInstructionText(languageLabel, romanizationSystem) },
                 { role: "system", content: buildRomanizedSingleWordInstructionText(languageLabel, romanizationSystem) },
@@ -100,7 +103,8 @@ export async function translateImage(imageBase64) {
         });
 
         const response = await openai.responses.create({
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
+            reasoning: { effort: "none" },
             input: [
                 { role: "system", content: systemInstructionText },
                 { role: "system", content: imageInstructionText },

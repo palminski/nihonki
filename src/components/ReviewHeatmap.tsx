@@ -1,5 +1,6 @@
 import { useMemo, useRef } from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import { colors, withOpacity } from "~/utils/colors";
 
 interface ReviewHeatmapProps {
@@ -50,7 +51,7 @@ export default function ReviewHeatmap({ activity, weeks = 53 }: ReviewHeatmapPro
 
     return (
         <View>
-            <Text style={styles.title}>Review Activity</Text>
+            <AppText style={styles.title}>Review Activity</AppText>
             <ScrollView
                 ref={scrollRef}
                 horizontal

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Pressable, ScrollView, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { NavigationProp, useFocusEffect, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,16 +39,16 @@ export default function JapaneseHomeScreen({ navigation }: { navigation: Navigat
                 >
                     <View style={styles.dueCountsBox}>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.blue400 }]}>{dueCounts.newCount}</Text>
-                            <Text style={styles.dueCountLabel}>New</Text>
+                            <AppText style={[styles.dueCountNumber, { color: colors.blue400 }]}>{dueCounts.newCount}</AppText>
+                            <AppText style={styles.dueCountLabel}>New</AppText>
                         </View>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.red400 }]}>{dueCounts.learningCount}</Text>
-                            <Text style={styles.dueCountLabel}>Learning</Text>
+                            <AppText style={[styles.dueCountNumber, { color: colors.red400 }]}>{dueCounts.learningCount}</AppText>
+                            <AppText style={styles.dueCountLabel}>Learning</AppText>
                         </View>
                         <View style={styles.dueCountItem}>
-                            <Text style={[styles.dueCountNumber, { color: colors.green400 }]}>{dueCounts.reviewCount}</Text>
-                            <Text style={styles.dueCountLabel}>Review</Text>
+                            <AppText style={[styles.dueCountNumber, { color: colors.green400 }]}>{dueCounts.reviewCount}</AppText>
+                            <AppText style={styles.dueCountLabel}>Review</AppText>
                         </View>
                     </View>
 
@@ -66,21 +67,21 @@ export default function JapaneseHomeScreen({ navigation }: { navigation: Navigat
                     <View style={styles.iconCircle}>
                         <Ionicons name="list" size={30} color="#e6b3ff" />
                     </View>
-                    <Text style={styles.iconLabel}>Card List</Text>
+                    <AppText style={styles.iconLabel}>Card List</AppText>
                 </Pressable>
 
                 <Pressable onPress={() => navigation.navigate("Review", { languageId, languageLabel })} style={styles.iconButton}>
                     <View style={[styles.iconCircle, { padding: 20 }]}>
                         <Ionicons name="layers" size={40} color="#e6b3ff" />
                     </View>
-                    <Text style={styles.iconLabel}>Review</Text>
+                    <AppText style={styles.iconLabel}>Review</AppText>
                 </Pressable>
 
                 <Pressable onPress={() => navigation.navigate("Add Words", { languageId, languageLabel })} style={styles.iconButton}>
                     <View style={styles.iconCircle}>
                         <Ionicons name="add-circle-outline" size={30} color="#e6b3ff" />
                     </View>
-                    <Text style={styles.iconLabel}>Add Words</Text>
+                    <AppText style={styles.iconLabel}>Add Words</AppText>
                 </Pressable>
             </View>
         </ScreenWrapper>

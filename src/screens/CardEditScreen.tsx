@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, Alert, StyleSheet } from "react-native";
+import { View, ScrollView, Pressable, Alert, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
+import AppTextInput from "~/components/AppTextInput";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { removeCardFromReviewDeck, addCardToReviewDeck } from "~/utils/deckManager";
@@ -44,7 +46,7 @@ export default function CardEditScreen() {
     }
 
     async function handleSave() {
-        const missing = FIELDS.filter((field) => !form[field.key]);
+        const missing = FIELDS.filter((field) => !field.optional && !form[field.key]);
         if (missing.length > 0) {
             Alert.alert("Missing Fields", "Please fill in every field before saving.");
             return;
@@ -81,8 +83,8 @@ export default function CardEditScreen() {
             <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 40 }}>
                 {FIELDS.map((field) => (
                     <View key={field.key} style={{ marginBottom: 12 }}>
-                        <Text style={styles.fieldLabel}>{field.label}</Text>
-                        <TextInput
+                        <AppText style={styles.fieldLabel}>{field.label}</AppText>
+                        <AppTextInput
                             style={styles.textInput}
                             value={form[field.key]}
                             onChangeText={(text) => handleChange(field.key, text)}
@@ -96,9 +98,9 @@ export default function CardEditScreen() {
                     disabled={saving}
                     style={styles.saveButton}
                 >
-                    <Text style={styles.saveButtonText}>
+                    <AppText style={styles.saveButtonText}>
                         {saving ? "Saving..." : isNewCard ? "Add Card" : "Save Card"}
-                    </Text>
+                    </AppText>
                 </Pressable>
 
                 {!isNewCard && (
@@ -107,7 +109,7 @@ export default function CardEditScreen() {
                         disabled={saving}
                         style={styles.deleteButton}
                     >
-                        <Text style={styles.deleteButtonText}>Delete Card</Text>
+                        <AppText style={styles.deleteButtonText}>Delete Card</AppText>
                     </Pressable>
                 )}
             </ScrollView>

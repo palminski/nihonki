@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Pressable, ScrollView, StyleSheet } from "react-native";
+import AppText from "~/components/AppText";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { NavigationProp, useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,13 +37,13 @@ export default function LanguageSelectScreen({ navigation }: { navigation: Navig
     return (
         <ScreenWrapper>
             <View style={styles.container}>
-                <Text style={styles.heading}>Select a language to study</Text>
+                <AppText style={styles.heading}>Select a language to study</AppText>
 
                 <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
                     {enabledLanguages.length === 0 && (
-                        <Text style={styles.emptyText}>
+                        <AppText style={styles.emptyText}>
                             No languages added yet.{"\n"}Tap "Add Language" below to get started.
-                        </Text>
+                        </AppText>
                     )}
                     {enabledLanguages.map((language) => (
                         <Pressable
@@ -55,23 +56,23 @@ export default function LanguageSelectScreen({ navigation }: { navigation: Navig
                             }
                             style={styles.languageRow}
                         >
-                            <Text style={{ fontSize: 32 }}>{language.flagEmoji}</Text>
+                            <AppText style={{ fontSize: 32 }}>{language.flagEmoji}</AppText>
                             <View style={styles.languageLabels}>
-                                <Text style={styles.languageLabel}>{language.label}</Text>
-                                <Text style={styles.languageNativeLabel}>{language.nativeLabel}</Text>
+                                <AppText style={styles.languageLabel}>{language.label}</AppText>
+                                <AppText style={styles.languageNativeLabel}>{language.nativeLabel}</AppText>
                             </View>
                             <View style={styles.dueCountsRow}>
-                                <Text style={[styles.dueCountText, { color: colors.blue400 }]}>
+                                <AppText style={[styles.dueCountText, { color: colors.blue400 }]}>
                                     {(dueCounts[language.id] ?? EMPTY_DUE_COUNTS).newCount}
-                                </Text>
-                                <Text style={styles.dueCountSlash}>/</Text>
-                                <Text style={[styles.dueCountText, { color: colors.red400 }]}>
+                                </AppText>
+                                <AppText style={styles.dueCountSlash}>/</AppText>
+                                <AppText style={[styles.dueCountText, { color: colors.red400 }]}>
                                     {(dueCounts[language.id] ?? EMPTY_DUE_COUNTS).learningCount}
-                                </Text>
-                                <Text style={styles.dueCountSlash}>/</Text>
-                                <Text style={[styles.dueCountText, { color: colors.green400 }]}>
+                                </AppText>
+                                <AppText style={styles.dueCountSlash}>/</AppText>
+                                <AppText style={[styles.dueCountText, { color: colors.green400 }]}>
                                     {(dueCounts[language.id] ?? EMPTY_DUE_COUNTS).reviewCount}
-                                </Text>
+                                </AppText>
                             </View>
                         </Pressable>
                     ))}
@@ -79,7 +80,7 @@ export default function LanguageSelectScreen({ navigation }: { navigation: Navig
 
                 <Pressable onPress={() => navigation.navigate("Manage Languages")} style={styles.manageButton}>
                     <Ionicons name="language" size={22} color="#e6b3ff" />
-                    <Text style={styles.manageButtonText}>Manage Languages</Text>
+                    <AppText style={styles.manageButtonText}>Manage Languages</AppText>
                 </Pressable>
             </View>
         </ScreenWrapper>

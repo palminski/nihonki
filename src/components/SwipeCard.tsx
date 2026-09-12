@@ -1,8 +1,11 @@
-import { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
-import { Animated, PanResponder, View, Text, Pressable, Dimensions, StyleSheet } from "react-native";
+import { forwardRef, useImperativeHandle, useRef, useEffect, useState } from "react";
+import { Animated, PanResponder, View, Text, Pressable, Dimensions, Alert, StyleSheet } from "react-native";
+import * as Speech from "expo-speech";
+import { Ionicons } from "@expo/vector-icons";
 import FuriganaText from "~/components/FuriganaText";
 import { VocabCard as VocabWord, normalizeCard } from "~/utils/cardTypes";
 import { formatInterval } from "~/utils/srsManager";
+import { getSpeechLocale } from "~/utils/languageManager";
 
 interface SwipeCardProps {
     vocabWord: VocabWord;
@@ -12,6 +15,10 @@ interface SwipeCardProps {
     // Next-due preview for a Good/Again grade — shown under the swipe stamps so users
     // can debug scheduling. Omitted (e.g. in Extra Review sessions) hides the labels.
     preview?: { again: Date; good: Date } | null;
+    // Per-language "read card aloud on flip" setting — on by default (see settingsManager).
+    autoPlayAudio?: boolean;
+    // Navigates to Card Edit for this card — omitted hides the edit button entirely.
+    onEdit?: () => void;
 }
 
 export interface SwipeCardHandle {
@@ -40,12 +47,19 @@ function renderBoldSegments(text: string, boldStyle: object) {
 }
 
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard(
-    { vocabWord, onSwipeRight, onSwipeLeft, onFlipChange, preview },
+    { vocabWord, onSwipeRight, onSwipeLeft, onFlipChange, preview, autoPlayAudio = true, onEdit },
     ref
 ) {
     const position = useRef(new Animated.ValueXY()).current;
     const flipAnim = useRef(new Animated.Value(0)).current;
     const isFlippedRef = useRef(false);
+    // Mirrors isFlippedRef in React state — only used to gate whether the top-left/top-right
+    // button rows (rendered outside the flip Pressable, see below) are mounted at all.
+    const [isBackVisible, setIsBackVisible] = useState(false);
+    // Drives those rows' fade-in once the flip has actually finished, rather than popping
+    // in the instant the flip starts while the card is still mid-rotation.
+    const buttonsOpacity = useRef(new Animated.Value(0)).current;
+    const view = normalizeCard(vocabWord);
 
     // A freshly-created Animated.Value's interpolated style (opacity/rotateY here) isn't
     // applied to the native view until an actual animation has run on it at least once —
@@ -56,9 +70,38 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
         Animated.timing(flipAnim, { toValue: 0, duration: 1, useNativeDriver: false }).start();
     }, []);
 
+    // This component remounts per card via a changing `key` — stop rather than let an
+    // in-flight utterance keep talking over the next card.
+    useEffect(() => {
+        return () => {
+            Speech.stop();
+        };
+    }, []);
+
+    // Reads the word, then (once that finishes) the example sentence, as one queued
+    // utterance pair rather than two buttons the user has to press separately.
+    function speakBoth() {
+        Speech.stop();
+        const locale = getSpeechLocale(vocabWord.languageId);
+        const sentence = view.exampleSentencePlain.replace(/<\/?b>/g, "");
+        Speech.speak(view.headword, {
+            language: locale,
+            onDone: () => Speech.speak(sentence, { language: locale }),
+        });
+    }
+
     function setFlipped(value: boolean) {
         isFlippedRef.current = value;
         onFlipChange?.(value);
+        if (value && autoPlayAudio) {
+            speakBoth();
+        }
+        if (!value) {
+            // Flipping back to front — hide immediately rather than fading out, so they
+            // don't linger over the front face while it rotates into view.
+            setIsBackVisible(false);
+            buttonsOpacity.setValue(0);
+        }
         // JS-driven rather than native: a freshly-mounted native-driven Animated.Value's
         // initial interpolated style isn't always committed to the native view until an
         // animation actually runs on it, which was making brand-new card instances (this
@@ -69,7 +112,18 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
             toValue: value ? 1 : 0,
             duration: 350,
             useNativeDriver: false,
-        }).start();
+        }).start(({ finished }) => {
+            // Only mount/fade the buttons in once this flip has genuinely finished (not
+            // interrupted by another flip starting mid-animation) and it landed on the back.
+            if (value && finished) {
+                setIsBackVisible(true);
+                Animated.timing(buttonsOpacity, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }).start();
+            }
+        });
     }
 
     const panResponder = useRef(
@@ -160,8 +214,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
         outputRange: [0, 0, 1, 1],
     });
 
-    const view = normalizeCard(vocabWord);
-
     return (
         <Animated.View
             {...panResponder.panHandlers}
@@ -233,6 +285,35 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
                     <Text style={styles.sentenceEnglish}>{view.exampleSentenceEnglish}</Text>
                 </Animated.View>
             </Pressable>
+
+            {/* Rendered as a sibling of (not nested inside) the flip Pressable above — nesting
+                these buttons inside that Pressable's subtree let its onPress win the touch
+                over the buttons' own, since both were fighting over the same tap. As a
+                sibling overlay they get first (and only) claim on taps within their bounds. */}
+            {isBackVisible && !!onEdit && (
+                <Animated.View style={[styles.topLeftButtons, { opacity: buttonsOpacity }]} pointerEvents="box-none">
+                    <Pressable onPress={onEdit} hitSlop={10} style={styles.iconButton}>
+                        <Ionicons name="create-outline" size={18} color="#e6b3ff" />
+                    </Pressable>
+                </Animated.View>
+            )}
+
+            {isBackVisible && (
+                <Animated.View style={[styles.topRightButtons, { opacity: buttonsOpacity }]} pointerEvents="box-none">
+                    {!!view.notes && (
+                        <Pressable
+                            onPress={() => Alert.alert("Notes", view.notes)}
+                            hitSlop={10}
+                            style={styles.iconButton}
+                        >
+                            <Ionicons name="document-text-outline" size={18} color="#e6b3ff" />
+                        </Pressable>
+                    )}
+                    <Pressable onPress={() => speakBoth()} hitSlop={10} style={styles.iconButton}>
+                        <Ionicons name="volume-high-outline" size={20} color="#e6b3ff" />
+                    </Pressable>
+                </Animated.View>
+            )}
         </Animated.View>
     );
 });
@@ -280,6 +361,32 @@ const styles = StyleSheet.create({
         color: "#c084fc80",
         marginTop: 20,
         fontSize: 14,
+    },
+    topLeftButtons: {
+        position: "absolute",
+        top: 12,
+        left: 12,
+        flexDirection: "row",
+        gap: 8,
+        zIndex: 10,
+    },
+    topRightButtons: {
+        position: "absolute",
+        top: 12,
+        right: 12,
+        flexDirection: "row",
+        gap: 8,
+        zIndex: 10,
+    },
+    iconButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        borderWidth: 1.5,
+        borderColor: "#a855f7",
+        backgroundColor: "#050505",
+        alignItems: "center",
+        justifyContent: "center",
     },
     backKanjiText: {
         color: "#fff",
