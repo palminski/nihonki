@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import ScreenWrapper from "~/components/ScreenWrapper";
 import { loadDeckSetting, updateDeckSetting, loadAnkiEnabledSetting, updateAnkiEnabledSetting, loadAutoPlayAudioSetting, updateAutoPlayAudioSetting } from "~/utils/settingsManager";
 import { loadNewCardsPerDay, updateNewCardsPerDay, DEFAULT_NEW_CARDS_PER_DAY } from "~/utils/srsManager";
+import { exportDeckBackup, pickDeckBackupFile, restoreDeckBackup } from "~/utils/backupManager";
 import { colors, withOpacity } from "~/utils/colors";
 
 export default function LanguageSettingsScreen() {
@@ -19,6 +20,7 @@ export default function LanguageSettingsScreen() {
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [backupBusy, setBackupBusy] = useState(false);
     const [settingForm, setSettingForm] = useState({
         newCardsPerDay: String(DEFAULT_NEW_CARDS_PER_DAY),
         ankiEnabled: false,
@@ -70,6 +72,67 @@ export default function LanguageSettingsScreen() {
 
         setSaving(false);
         Alert.alert("Setting Saved!");
+    }
+
+    async function handleExportBackup() {
+        if (backupBusy) return;
+        setBackupBusy(true);
+        try {
+            await exportDeckBackup(languageId, languageLabel);
+        } catch (error: any) {
+            Alert.alert("Backup Failed", error?.message ? error.message : "Something went wrong while creating the backup.");
+        } finally {
+            setBackupBusy(false);
+        }
+    }
+
+    async function handleImportBackup() {
+        if (backupBusy) return;
+        setBackupBusy(true);
+        try {
+            const preview = await pickDeckBackupFile();
+            if (!preview) {
+                setBackupBusy(false);
+                return;
+            }
+
+            if (preview.languageId !== languageId) {
+                Alert.alert(
+                    "Wrong Language",
+                    `This backup is for ${preview.languageLabel}, but you're viewing ${languageLabel} settings. Go to ${preview.languageLabel}'s settings to import it.`
+                );
+                setBackupBusy(false);
+                return;
+            }
+
+            const exportedDate = new Date(preview.exportedAt);
+            const exportedLabel = Number.isNaN(exportedDate.getTime()) ? "an earlier date" : exportedDate.toLocaleDateString();
+
+            Alert.alert(
+                "Restore Backup",
+                `This will replace your current ${languageLabel} deck with the ${preview.cardCount} card${preview.cardCount === 1 ? "" : "s"} from this backup (exported ${exportedLabel}). This cannot be undone.`,
+                [
+                    { text: "Cancel", style: "cancel", onPress: () => setBackupBusy(false) },
+                    {
+                        text: "Restore",
+                        style: "destructive",
+                        onPress: async () => {
+                            try {
+                                await restoreDeckBackup(languageId, preview);
+                                Alert.alert("Deck Restored!");
+                            } catch (error: any) {
+                                Alert.alert("Restore Failed", error?.message ? error.message : "Something went wrong while restoring the backup.");
+                            } finally {
+                                setBackupBusy(false);
+                            }
+                        },
+                    },
+                ]
+            );
+        } catch (error: any) {
+            Alert.alert("Import Failed", error?.message ? error.message : "Something went wrong while reading that file.");
+            setBackupBusy(false);
+        }
     }
 
     if (loading) {
@@ -192,6 +255,41 @@ export default function LanguageSettingsScreen() {
                     </>
                 )}
 
+                <View style={{ marginBottom: 12 }}>
+                    <View style={styles.row}>
+                        <AppText style={styles.label}>Backup & Restore</AppText>
+                        <Pressable
+                            onPress={() =>
+                                Alert.alert(
+                                    "Backup & Restore",
+                                    `Export saves this ${languageLabel} deck to a file you can keep somewhere safe (email, cloud drive, etc.) — handy before switching phones or if you're worried about losing local data. Import restores a previously exported ${languageLabel} backup, replacing the deck currently on this device.`
+                                )
+                            }
+                            style={{ alignItems: 'center' }}
+                        >
+                            <Ionicons name="help-circle-outline" size={18} color={"#fff"} />
+                        </Pressable>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                        <Pressable
+                            onPress={handleExportBackup}
+                            disabled={backupBusy}
+                            style={[styles.backupButton, { flex: 1 }, backupBusy && { opacity: 0.5 }]}
+                        >
+                            <Ionicons name="cloud-upload-outline" size={18} color={colors.purple300} />
+                            <AppText style={styles.backupButtonText}>Export</AppText>
+                        </Pressable>
+                        <Pressable
+                            onPress={handleImportBackup}
+                            disabled={backupBusy}
+                            style={[styles.backupButton, { flex: 1 }, backupBusy && { opacity: 0.5 }]}
+                        >
+                            <Ionicons name="cloud-download-outline" size={18} color={colors.purple300} />
+                            <AppText style={styles.backupButtonText}>Import</AppText>
+                        </Pressable>
+                    </View>
+                </View>
+
                 <Pressable
                     onPress={handleFormSubmit}
                     disabled={saving}
@@ -233,6 +331,21 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 15,
         elevation: 4,
+    },
+    backupButton: {
+        borderWidth: 1,
+        padding: 10,
+        backgroundColor: colors.black,
+        borderColor: colors.purple800,
+        borderRadius: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    backupButtonText: {
+        color: colors.purple300,
+        fontSize: 15,
     },
     saveButton: {
         borderWidth: 1,
