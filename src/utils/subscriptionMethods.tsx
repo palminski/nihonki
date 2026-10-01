@@ -42,7 +42,15 @@ export async function promptUserSubscription(): Promise<boolean> {
             }
         }
 
-        Alert.alert("Purchase Failed!");
+        // Surfacing the real RevenueCat/StoreKit error code+message instead of a blanket
+        // "Purchase Failed!" — without this there was no way to tell apart a misconfigured
+        // product, an unsigned Paid Apps Agreement, a network error, etc.
+        const readableCode = error?.userInfo?.readableErrorCode ?? error?.readableErrorCode;
+        console.error("Purchase failed:", readableCode, error?.message, error?.underlyingErrorMessage);
+        Alert.alert(
+            "Purchase Failed!",
+            [readableCode, error?.message, error?.underlyingErrorMessage].filter(Boolean).join("\n") || "Unknown error — please try again."
+        );
         return false;
     }
 }
